@@ -1,4 +1,4 @@
-name: Deploy Environment
+name: Deploy Infrastructure Environment
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ on:
         required: true
         default: 'AZURE_PROD'
       environmentName:
-        description: 'The environment deployment name, e.g. dev, qa or prod'
+        description: 'The environment deployment name [prod, qa, dev]'
         required: true
         default: 'prod'
       prefix:
@@ -22,10 +22,10 @@ on:
 
 defaults:
   run:
-    working-directory: terraform
+    working-directory: infrastructure
 jobs:
   deploy:
-    name: Deploy Environment using Terraform to Azure
+    name: Deploy infrastructure using Terraform to Azure
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
