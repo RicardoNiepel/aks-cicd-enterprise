@@ -102,3 +102,19 @@ dist
 
 # TernJS port file
 .tern-port
+
+# Maven
+target
+
+# IntelliJ Idea project files
+.idea
+*.iml
+
+# Eclipse files
+.settings
+.classpath
+.project
+.factorypath
+
+# MacOS files
+.DS_Store
