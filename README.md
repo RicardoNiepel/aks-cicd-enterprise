@@ -13,7 +13,7 @@ az ad sp create-for-rbac -n "GitHub workflow aks-cicd-enterprise" --role Owner -
 ```
 
 2. Navigate to this project's settings [Secrets config page](./../settings/secrets/actions).
-3. Update the secret with the name `AZURE_PROD` with the following template (replace `<GUID>` accordingly):
+3. Update the secret with the name `AZURE_SUBSCRIPTION` with the following template (replace `<GUID>` accordingly):
 
 ```json
 {

@@ -6,7 +6,7 @@ on:
       azureSecretName:
         description: 'Azure Secret Name containing the Service Principal Details'
         required: true
-        default: 'AZURE_PROD'
+        default: 'AZURE_SUBSCRIPTION'
       environmentName:
         description: 'The environment deployment name [prod, qa, dev]'
         required: true
