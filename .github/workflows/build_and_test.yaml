@@ -76,6 +76,9 @@ jobs:
       - name: Build Test and Package
         id: maven_build
         run: |
+          # Change all uppercase to lowercase
+          GITHUB_REPOSITORY=$(echo $GITHUB_REPOSITORY | tr '[A-Z]' '[a-z]')
+
           mvn package -B \
             -Dsha1="${{ needs.build_parameters.outputs.maven_sha1 }}" \
             -Dchangelist="${{ needs.build_parameters.outputs.maven_changelist }}" \
