@@ -3,9 +3,6 @@ name: Deploy Application
 on:
   deployment:
 
-env:
-  ACR_REGISTRY: 'akscicddevacrb1ce1.azurecr.io'
-
 jobs:
   deploy_details:
     name: Define Deployment Details
@@ -41,7 +38,7 @@ jobs:
 
     env:
       GHCR_APP_IMAGE: ghcr.io/${{ needs.deploy_details.outputs.app_container_image }}:${{ needs.deploy_details.outputs.app_container_version }}
-      ACR_APP_IMAGE: ${{env.ACR_REGISTRY}}/${{ needs.deploy_details.outputs.app_container_image }}:${{ needs.deploy_details.outputs.app_container_version }}
+      ACR_APP_IMAGE: akscicddevacrb1ce1.azurecr.io/${{ needs.deploy_details.outputs.app_container_image }}:${{ needs.deploy_details.outputs.app_container_version }}
 
     steps:
       - name: Sign in to GitHub Container Registry
@@ -60,7 +57,7 @@ jobs:
           creds: ${{ secrets.AZURE_SUBSCRIPTION }}
       - name: ACR Login
         run: |
-          az acr login --name ${{env.ACR_REGISTRY}}
+          az acr login --name akscicddevacrb1ce1.azurecr.io
       - name: Push GHCR containers to ACR
         run: |
           docker push $ACR_APP_IMAGE
