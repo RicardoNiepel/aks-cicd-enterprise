@@ -55,7 +55,6 @@ module.exports = class DeploymentLabel {
       if (status.data.statuses) {
         const statusToMatch = [
           'Container Image Published - App',
-          'Container Image Published - Database',
         ];
     
         return status.data.statuses.filter(status => {
@@ -113,7 +112,7 @@ module.exports = class DeploymentLabel {
       , github = this.github
       ;
         
-    const environmentRegexResult = /deploy to (.*)/.exec(label)
+    const environmentRegexResult = /Ready to (.*)/.exec(label)
       , containerTableEntries = []
       ;
     
