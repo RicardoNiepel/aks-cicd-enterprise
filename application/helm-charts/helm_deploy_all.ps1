@@ -7,12 +7,6 @@ param
     [ValidateLength(1,255)]
     [ValidateNotNull()]
     [string]
-    $Environment = "prod",
-
-    [Parameter(Mandatory = $true)]
-    [ValidateLength(1,255)]
-    [ValidateNotNull()]
-    [string]
     $Namespace,
 
     [Parameter(Mandatory = $true)]
@@ -21,17 +15,16 @@ param
     [string]
     $Image,
 
-    [Parameter(Mandatory = $false)]
+    [Parameter(Mandatory = $true)]
     [ValidateLength(1,255)]
     [ValidateNotNull()]
     [string]
-    $Tag = "latest"
+    $Tag
 )
 
 Set-StrictMode -Version latest
 $ErrorActionPreference = "Stop"
 
-Write-Host "Environment:      $Environment"
 Write-Host "Namespace:        $Namespace"
 Write-Host "Image:            $Image"
 Write-Host "Tag:              $Tag"

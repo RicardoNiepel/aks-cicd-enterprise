@@ -97,3 +97,25 @@ jobs:
         shell: pwsh
         env:
           AZURE_CREDENTIALS: ${{ secrets.AZURE_SUBSCRIPTION }}
+      - name: Report Success
+        uses: actions/github-script@v3
+        env:
+          environment_url: ${{ steps.terraform_output.outputs.stdout }}
+        with:
+          script: |
+            const scriptPath = require('path').resolve('./.github/workflows/scripts/deploymentManager.js')
+              , DeploymentManager = require(scriptPath)
+              ;
+            const manager = new DeploymentManager(context, github);
+            await manager.activateDeployment(context.payload.deployment.id, process.env.environment_url);
+      - name: Report Failure
+        if: failure()
+        uses: octokit/request-action@v1.x
+        with:
+          route: POST /repos/:owner/:repo/deployments/:deployment_id/statuses
+          deployment_id: ${{ github.event.deployment.id }}
+          description: "Deploy failed for ${{ github.event.deployment.environment }}"
+          environment: ${{ github.event.deployment.environment }}
+          state: "failure"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
