@@ -14,7 +14,7 @@ module.exports = async(payload) => {
     head = validateParameter(payload, 'head');
 
   const isProduction = /^prod-.*/.test(environment),
-    deploymentEnvironment = isProduction ? environment : `${environment}-${head}-gcp`;
+    deploymentEnvironment = isProduction ? environment : `${environment}-${head}`;
 
   // A deployment payload for passing information of the components for the deployment
   const deploymentPayload = {

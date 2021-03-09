@@ -112,7 +112,7 @@ module.exports = class DeploymentLabel {
       , github = this.github
       ;
         
-    const environmentRegexResult = /ready to (.*)/.exec(label)
+    const environmentRegexResult = /deploy to (.*)/.exec(label)
       , containerTableEntries = []
       ;
     

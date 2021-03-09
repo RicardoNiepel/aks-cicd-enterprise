@@ -15,7 +15,7 @@ jobs:
     name: Create deployment
     runs-on: ubuntu-latest
     if: |
-      github.event.label.name == 'Ready to Test'
+      github.event.label.name == 'Deploy to Test'
 
     steps:
       - name: Checkout Sources
