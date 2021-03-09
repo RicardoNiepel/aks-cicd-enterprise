@@ -93,7 +93,7 @@ jobs:
         shell: bash
       - name: Run Helm Deploy
         working-directory: application/helm-charts
-        run: ./helm_deploy_all.ps1 -Image "${{ env.ACR_APP_IMAGE }}" -Tag "${{ env.ACR_APP_IMAGE_TAG }}"
+        run: ./helm_deploy_all.ps1 -Image "${{ env.ACR_APP_IMAGE }}" -Tag "${{ env.ACR_APP_IMAGE_TAG }}" -Namespace "${{ env.AKS_APP_NAMESPACE }}"
         shell: pwsh
         env:
           AZURE_CREDENTIALS: ${{ secrets.AZURE_SUBSCRIPTION }}
