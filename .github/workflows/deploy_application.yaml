@@ -12,7 +12,6 @@ jobs:
       container_registry: ${{ steps.deployment_data.outputs.container_registry }}
       app_container_image: ${{ steps.deployment_data.outputs.app_container_image }}
       app_container_version: ${{ steps.deployment_data.outputs.app_container_version }}
-      deployment_github_ref: ${{ steps.deployment_data.outputs.deployment_github_ref }}
       deployment_github_head: ${{ steps.deployment_data.outputs.deployment_github_head }}
 
     steps:
@@ -29,10 +28,6 @@ jobs:
               , deploymentPayload = require(scriptPath);
             ;
             await deploymentPayload(context, core, github).unpackAndStart();
-
-      - run: |
-          echo "deployment_github_ref: ${{ steps.deployment_data.outputs.deployment_github_ref }}"
-          echo "deployment_github_head: ${{ steps.deployment_data.outputs.deployment_github_head }}"
 
   mirror_containers:
     name: Mirror Containers to Azure Container Registry

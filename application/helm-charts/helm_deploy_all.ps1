@@ -25,6 +25,8 @@ param
 Set-StrictMode -Version latest
 $ErrorActionPreference = "Stop"
 
+$Namespace = $Namespace.ToLower()
+
 Write-Host "Namespace:        $Namespace"
 Write-Host "Image:            $Image"
 Write-Host "Tag:              $Tag"
