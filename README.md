@@ -2,13 +2,20 @@
 
 TODO
 
-## Flow
+## Flow 1. Version
+
+* Deployment to Dev: each pull request with a label deploys into the same Azure Kubernetes Services inside the Dev environment
+* Deployment to QA: each push to master/merge of pull request deploys into the same AKS inside the QA environment using the same namespace
+* Deployment to Prod: only a specific team member (like dev lead, pm) can trigger this workflow
+
+## Flow 2. Version
 
 * Deployment to Dev: each pull request with a label deploys into the same Azure Kubernetes Services inside the Dev environment using another (PR specific) namespace
 * Deployment to QA: each push to master/merge of pull request deploys into the same AKS inside the QA environment using the same namespace
 * Deployment to PreProd: only a specific team member (like dev lead, pm) can trigger this workflow
 * Deployment to Prod: after each PreProd deployment the metrics of it are used for 5 minutes to decide to trigger an automatic deployment to Prod
   * use [AppInsights Annotation](https://www.wictorwilen.se/blog/announcing-application-insights-annotation-github-action/)
+
 
 ## Configure GitHub secrets
 

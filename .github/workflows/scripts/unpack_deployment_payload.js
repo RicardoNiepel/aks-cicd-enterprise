@@ -25,6 +25,7 @@ class DeploymentPayload {
 
         core.setOutput('deployment_sha', deploymentPayload.sha);
         core.setOutput('deployment_github_ref', deploymentPayload.ref);
+        core.setOutput('deployment_github_head', deployment.ref);
 
         core.setOutput('environment', environment);
 

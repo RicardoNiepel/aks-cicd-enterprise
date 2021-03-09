@@ -10,9 +10,10 @@ jobs:
 
     outputs:
       container_registry: ${{ steps.deployment_data.outputs.container_registry }}
-
       app_container_image: ${{ steps.deployment_data.outputs.app_container_image }}
       app_container_version: ${{ steps.deployment_data.outputs.app_container_version }}
+      deployment_github_ref: ${{ steps.deployment_data.outputs.deployment_github_ref }}
+      deployment_github_head: ${{ steps.deployment_data.outputs.deployment_github_head }}
 
     steps:
       - name: Checkout Sources
@@ -28,6 +29,10 @@ jobs:
               , deploymentPayload = require(scriptPath);
             ;
             await deploymentPayload(context, core, github).unpackAndStart();
+
+      - run: |
+          echo "deployment_github_ref: ${{ steps.deployment_data.outputs.deployment_github_ref }}"
+          echo "deployment_github_head: ${{ steps.deployment_data.outputs.deployment_github_head }}"
 
   mirror_containers:
     name: Mirror Containers to Azure Container Registry
@@ -61,3 +66,34 @@ jobs:
       - name: Push GHCR containers to ACR
         run: |
           docker push $ACR_APP_IMAGE
+
+  deploy:
+    name: Deploy Helm Charts to Azure Kubernetes Service
+    runs-on: ubuntu-latest
+
+    needs:
+      - deploy_details
+      - mirror_containers
+
+    env:
+      AKS_RESOURCE_GROUP: 'aks_cicd_dev_rg'
+      AKS_NAME: 'akscicddev-aks-b1ce1'
+      AKS_APP_NAMESPACE: ${{ needs.deploy_details.outputs.deployment_github_head }}
+      ACR_APP_IMAGE: akscicddevacrb1ce1.azurecr.io/${{ needs.deploy_details.outputs.app_container_image }}
+      ACR_APP_IMAGE_TAG: ${{ needs.deploy_details.outputs.app_container_version }}
+
+    steps:
+      - uses: actions/checkout@master
+      - name: Azure Login
+        uses: Azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_SUBSCRIPTION }}
+      - name: AZ AKS Login
+        run: az aks get-credentials --resource-group ${{ env.AKS_RESOURCE_GROUP }} --name ${{ env.AKS_NAME }} --overwrite-existing --admin
+        shell: bash
+      - name: Run Helm Deploy
+        working-directory: application/helm-charts
+        run: ./helm_deploy_all.ps1 -Image "${{ env.ACR_APP_IMAGE }}" -Tag "${{ env.ACR_APP_IMAGE_TAG }}"
+        shell: pwsh
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_SUBSCRIPTION }}
