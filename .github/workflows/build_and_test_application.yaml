@@ -1,14 +1,21 @@
 name: Build and Test Application
 
+#
+# This workflow provides a continuous integration workflow for all feature branches
+#
+# Upon successful building of the container a commit status will be applied to provide a record of the container
+# that was published from this latest commit.
+#
+
 on:
   push:
-    branches:
+    branches-ignore:
       - main
 
 jobs:
   build_parameters:
     name: Define Build Parameters
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     # We need to share details across job boundaries, expose the step outputs at the job level
     outputs:
@@ -35,7 +42,7 @@ jobs:
 
   build:
     name: Build, Test and Package
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     needs:
       - build_parameters

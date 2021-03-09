@@ -10,8 +10,6 @@ module.exports = async(payload) => {
     containerRegistry = validateParameter(payload, 'containerRegistry'),
     appContainerImage = validateParameter(payload, 'appContainerImage'),
     appContainerVersion = validateParameter(payload, 'appContainerVersion'),
-    databaseContainerImage = validateParameter(payload, 'databaseContainerImage'),
-    databaseContainerVersion = validateParameter(payload, 'databaseContainerVersion'),
     sha = validateParameter(payload, 'sha'),
     head = validateParameter(payload, 'head');
 
@@ -24,10 +22,6 @@ module.exports = async(payload) => {
     app_container: {
       image: appContainerImage,
       version: appContainerVersion,
-    },
-    database_container: {
-      image: databaseContainerImage,
-      version: databaseContainerVersion,
     },
     sha: sha,
     environment: deploymentEnvironment,
