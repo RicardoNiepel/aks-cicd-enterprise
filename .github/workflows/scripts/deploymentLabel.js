@@ -21,7 +21,7 @@ module.exports = class DeploymentLabel {
 
     if (!containers || containers.length === 0) {
       await this.postNoContainerStatus();
-    } else if (containers.length === 2) {
+    } else if (containers.length === 1) {
       // Extract the containers, post a message to the user acknowledging the request and provide outputs for action steps
       await this.postDeploymentComment(label, containers)
 
