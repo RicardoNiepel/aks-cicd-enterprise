@@ -10,9 +10,9 @@ jobs:
 
     outputs:
       container_registry: ${{ steps.deployment_data.outputs.container_registry }}
-
       app_container_image: ${{ steps.deployment_data.outputs.app_container_image }}
       app_container_version: ${{ steps.deployment_data.outputs.app_container_version }}
+      deployment_github_head: ${{ steps.deployment_data.outputs.deployment_github_head }}
 
     steps:
       - name: Checkout Sources
@@ -61,3 +61,56 @@ jobs:
       - name: Push GHCR containers to ACR
         run: |
           docker push $ACR_APP_IMAGE
+
+  deploy:
+    name: Deploy Helm Charts to Azure Kubernetes Service
+    runs-on: ubuntu-latest
+
+    needs:
+      - deploy_details
+      - mirror_containers
+
+    env:
+      AKS_RESOURCE_GROUP: 'aks_cicd_dev_rg'
+      AKS_NAME: 'akscicddev-aks-b1ce1'
+      AKS_APP_NAMESPACE: ${{ needs.deploy_details.outputs.deployment_github_head }}
+      ACR_APP_IMAGE: akscicddevacrb1ce1.azurecr.io/${{ needs.deploy_details.outputs.app_container_image }}
+      ACR_APP_IMAGE_TAG: ${{ needs.deploy_details.outputs.app_container_version }}
+
+    steps:
+      - uses: actions/checkout@master
+      - name: Azure Login
+        uses: Azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_SUBSCRIPTION }}
+      - name: AZ AKS Login
+        run: az aks get-credentials --resource-group ${{ env.AKS_RESOURCE_GROUP }} --name ${{ env.AKS_NAME }} --overwrite-existing --admin
+        shell: bash
+      - name: Run Helm Deploy
+        working-directory: application/helm-charts
+        run: ./helm_deploy_all.ps1 -Image "${{ env.ACR_APP_IMAGE }}" -Tag "${{ env.ACR_APP_IMAGE_TAG }}" -Namespace "${{ env.AKS_APP_NAMESPACE }}"
+        shell: pwsh
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_SUBSCRIPTION }}
+      - name: Report Success
+        uses: actions/github-script@v3
+        env:
+          environment_url: ${{ steps.terraform_output.outputs.stdout }}
+        with:
+          script: |
+            const scriptPath = require('path').resolve('./.github/workflows/scripts/deploymentManager.js')
+              , DeploymentManager = require(scriptPath)
+              ;
+            const manager = new DeploymentManager(context, github);
+            await manager.activateDeployment(context.payload.deployment.id, process.env.environment_url);
+      - name: Report Failure
+        if: failure()
+        uses: octokit/request-action@v1.x
+        with:
+          route: POST /repos/:owner/:repo/deployments/:deployment_id/statuses
+          deployment_id: ${{ github.event.deployment.id }}
+          description: "Deploy failed for ${{ github.event.deployment.environment }}"
+          environment: ${{ github.event.deployment.environment }}
+          state: "failure"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
