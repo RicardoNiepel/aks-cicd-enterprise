@@ -90,22 +90,23 @@ jobs:
       - name: Run Helm Deploy
         
         working-directory: application/helm-charts
-        run: ./helm_deploy_all.ps1 -Image "${{ env.ACR_APP_IMAGE }}" -Tag "${{ env.ACR_APP_IMAGE_TAG }}" -Namespace "${{ env.AKS_APP_NAMESPACE }}" -IngressPath "/${{ env.AKS_APP_NAMESPACE }}/"
+        run: ./helm_deploy_all.ps1 -Image "${{ env.ACR_APP_IMAGE }}" -Tag "${{ env.ACR_APP_IMAGE_TAG }}" -Namespace "${{ env.AKS_APP_NAMESPACE }}"
         shell: pwsh
         env:
           AZURE_CREDENTIALS: ${{ secrets.AZURE_SUBSCRIPTION }}
       - name: Get Deployment URL
-        id: helm_deploy
+        id: get_deployment_url
         run: |
           NodeResourceGroup=$(az aks show -g aks_cicd_dev_rg -n akscicddev-aks-b1ce1 -o tsv --query nodeResourceGroup)
           
           IngressFQDN=$(az network public-ip show -n ${{ env.DEPLOYMENT_PREFIX }} -g $NodeResourceGroup -o tsv --query dnsSettings.fqdn)
 
-          echo "http://${IngressFQDN}/${{ env.AKS_APP_NAMESPACE }}/"
+          DeploymentURL="http://${IngressFQDN}/"
+          echo '::set-output name=DeploymentURL::${DeploymentURL}'
       - name: Report Success
         uses: actions/github-script@v3
         env:
-          environment_url: ${{ steps.helm_deploy.outputs.stdout }}
+          environment_url: ${{ steps.get_deployment_url.outputs.DeploymentURL }}
         with:
           script: |
             const scriptPath = require('path').resolve('./.github/workflows/scripts/deploymentManager.js')
