@@ -102,7 +102,7 @@ jobs:
           IngressFQDN=$(az network public-ip show -n ${{ env.DEPLOYMENT_PREFIX }} -g $NodeResourceGroup -o tsv --query dnsSettings.fqdn)
 
           DeploymentURL="http://${IngressFQDN}/"
-          echo '::set-output name=DeploymentURL::${DeploymentURL}'
+          echo "::set-output name=DeploymentURL::${DeploymentURL}"
       - name: Report Success
         uses: actions/github-script@v3
         env:
