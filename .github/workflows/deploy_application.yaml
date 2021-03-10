@@ -97,9 +97,9 @@ jobs:
       - name: Get Deployment URL
         id: helm_deploy
         run: |
-          NodeResourceGroup=$(az aks show -g aks_cicd_dev_rg -n akscicddev-aks-b1ce1 --query nodeResourceGroup)
+          NodeResourceGroup=$(az aks show -g aks_cicd_dev_rg -n akscicddev-aks-b1ce1 -o tsv --query nodeResourceGroup)
           
-          IngressFQDN=$(az network public-ip show -n ${{ env.DEPLOYMENT_PREFIX }} -g $NodeResourceGroup --query dnsSettings.fqdn)
+          IngressFQDN=$(az network public-ip show -n ${{ env.DEPLOYMENT_PREFIX }} -g $NodeResourceGroup -o tsv --query dnsSettings.fqdn)
 
           echo "${IngressFQDN}/{{ env.AKS_APP_NAMESPACE }}/"
       - name: Report Success
