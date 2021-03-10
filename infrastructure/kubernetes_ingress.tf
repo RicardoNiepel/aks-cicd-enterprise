@@ -46,3 +46,7 @@ resource "kubernetes_secret" "nginx_ingress_default_ssl_certificate" {
 
   type = "Opaque"
 }
+
+output "AKS_INGRESS_FQDN" {
+  value = azurerm_public_ip.nginx_ingress_pip.fqdn
+}
