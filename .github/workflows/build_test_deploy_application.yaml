@@ -142,8 +142,7 @@ jobs:
           az acr login --name ${{ secrets.ACR }}
       - name: Push GHCR containers to ACR
         run: |
-          docker push $ACR_APP_IMAGEd: context.ref,
-            });
+          docker push $ACR_APP_IMAGE
 
   deploy_qa:
     name: Deploy to QA
@@ -227,8 +226,7 @@ jobs:
           az acr login --name ${{ secrets.ACR }}
       - name: Push GHCR containers to ACR
         run: |
-          docker push $ACR_APP_IMAGEd: context.ref,
-            });
+          docker push $ACR_APP_IMAGE
 
   deploy_prod:
     name: Deploy to Prod
