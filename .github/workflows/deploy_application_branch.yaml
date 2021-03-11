@@ -82,7 +82,6 @@ jobs:
       - mirror_containers
 
     env:
-      DEPLOYMENT_PREFIX: ${{ secrets.DEPLOYMENT_PREFIX }} # e.g. 'aks-cicd-dev'
       AKS_RESOURCE_GROUP: ${{ secrets.AKS_RESOURCE_GROUP }} # e.g. 'aks_cicd_dev_rg'
       AKS_NAME: ${{ secrets.AKS_NAME }} # e.g. 'akscicddev-aks-b1ce1'
       AKS_APP_NAMESPACE: ${{ needs.deploy_details.outputs.deployment_github_head }}
@@ -109,7 +108,7 @@ jobs:
         run: |
           NodeResourceGroup=$(az aks show -g ${{ env.AKS_RESOURCE_GROUP }} -n ${{ env.AKS_NAME }} -o tsv --query nodeResourceGroup)
           
-          IngressFQDN=$(az network public-ip show -n ${{ env.DEPLOYMENT_PREFIX }} -g $NodeResourceGroup -o tsv --query dnsSettings.fqdn)
+          IngressFQDN=$(az network public-ip list -g $NodeResourceGroup --query "[?contains(@.name, 'aks')==\`true\`]" -o tsv --query dnsSettings.fqdn)
 
           DeploymentURL="http://${IngressFQDN}/"
           echo "::set-output name=DeploymentURL::${DeploymentURL}"

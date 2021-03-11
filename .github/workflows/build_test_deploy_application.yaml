@@ -123,7 +123,6 @@ jobs:
       GHCR_APP_IMAGE: ghcr.io/${{ needs.build.outputs.container_image }}:${{ needs.build.outputs.container_version }}
       ACR_APP_IMAGE_FULL: ${{ secrets.ACR }}/${{ needs.build.outputs.container_image }}:${{ needs.build.outputs.container_version }}
 
-      DEPLOYMENT_PREFIX: ${{ secrets.DEPLOYMENT_PREFIX }} # e.g. 'aks-cicd-dev'
       AKS_RESOURCE_GROUP: ${{ secrets.AKS_RESOURCE_GROUP }} # e.g. 'aks_cicd_dev_rg'
       AKS_NAME: ${{ secrets.AKS_NAME }} # e.g. 'akscicddev-aks-b1ce1'
       AKS_APP_NAMESPACE: bookstore-advanced
@@ -166,11 +165,10 @@ jobs:
         run: |
           NodeResourceGroup=$(az aks show -g ${{ env.AKS_RESOURCE_GROUP }} -n ${{ env.AKS_NAME }} -o tsv --query nodeResourceGroup)
           
-          IngressFQDN=$(az network public-ip show -n ${{ env.DEPLOYMENT_PREFIX }} -g $NodeResourceGroup -o tsv --query dnsSettings.fqdn)
+          IngressFQDN=$(az network public-ip list -g $NodeResourceGroup --query "[?contains(@.name, 'aks')==\`true\`]" -o tsv --query dnsSettings.fqdn)
 
           DeploymentURL="http://${IngressFQDN}/"
           echo "::set-output name=DeploymentURL::${DeploymentURL}"
-          echo "::set-output name=DeploymentURL::http://aks-cicd-qa-13717.westeurope.cloudapp.azure.com/"
 
   deploy_prod:
     name: Deploy to PROD
@@ -188,7 +186,6 @@ jobs:
       GHCR_APP_IMAGE: ghcr.io/${{ needs.build.outputs.container_image }}:${{ needs.build.outputs.container_version }}
       ACR_APP_IMAGE_FULL: ${{ secrets.ACR }}/${{ needs.build.outputs.container_image }}:${{ needs.build.outputs.container_version }}
 
-      DEPLOYMENT_PREFIX: ${{ secrets.DEPLOYMENT_PREFIX }} # e.g. 'aks-cicd-dev'
       AKS_RESOURCE_GROUP: ${{ secrets.AKS_RESOURCE_GROUP }} # e.g. 'aks_cicd_dev_rg'
       AKS_NAME: ${{ secrets.AKS_NAME }} # e.g. 'akscicddev-aks-b1ce1'
       AKS_APP_NAMESPACE: bookstore-advanced
@@ -231,9 +228,7 @@ jobs:
         run: |
           NodeResourceGroup=$(az aks show -g ${{ env.AKS_RESOURCE_GROUP }} -n ${{ env.AKS_NAME }} -o tsv --query nodeResourceGroup)
           
-          IngressFQDN=$(az network public-ip show -n ${{ env.DEPLOYMENT_PREFIX }} -g $NodeResourceGroup -o tsv --query dnsSettings.fqdn)
+          IngressFQDN=$(az network public-ip list -g $NodeResourceGroup --query "[?contains(@.name, 'aks')==\`true\`]" -o tsv --query dnsSettings.fqdn)
 
           DeploymentURL="http://${IngressFQDN}/"
-          echo $DeploymentURL
           echo "::set-output name=DeploymentURL::${DeploymentURL}"
-          echo "::set-output name=DeploymentURL::http://aks-cicd-prod-edc62.northeurope.cloudapp.azure.com/"
