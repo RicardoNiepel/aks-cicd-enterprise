@@ -7,7 +7,7 @@ param
     [ValidateLength(1,255)]
     [ValidateNotNull()]
     [string]
-    $Namespace,
+    $Namespace
 )
 
 helm delete bookstore-advanced --namespace $Namespace
