@@ -1,4 +1,4 @@
-name: Undeploy Application - Branch
+name: Branch - Undeploy App
 
 on:
   deployment_status

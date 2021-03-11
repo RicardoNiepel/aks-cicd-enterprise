@@ -1,4 +1,4 @@
-name: Deploy Infrastructure Environment
+name: Other - Deploy Infrastructure Environment
 
 on:
   workflow_dispatch:

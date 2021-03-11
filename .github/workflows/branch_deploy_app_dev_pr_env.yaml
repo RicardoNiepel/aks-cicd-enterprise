@@ -1,4 +1,4 @@
-name: Deploy Application - Branch
+name: Branch - Deploy App to PR Environment
 
 on:
   deployment:

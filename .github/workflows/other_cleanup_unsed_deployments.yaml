@@ -1,4 +1,4 @@
-name: Cleanup unused Deployments
+name: Other - Cleanup unused Deployments
 
 on:
   workflow_dispatch:

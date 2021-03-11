@@ -1,4 +1,4 @@
-name: Cleanup PR Environments
+name: Branch - Cleanup PR Environments
 
 #
 # This workflow will remove any existing integration/review environments that have be created as part
