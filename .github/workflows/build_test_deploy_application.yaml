@@ -1,0 +1,161 @@
+name: Build, Test and Deploy Application - Production
+
+#
+# This workflow provides a continuous delivery workflow for the default branch on the repository.
+#
+# Upon successful building of the containers a deployment request will be created triggering the
+# associated workflows for deploying.
+#
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_parameters:
+    name: Define Build Parameters
+    runs-on: ubuntu-latest
+
+    # We need to share details across job boundaries, expose the step outputs at the job level
+    outputs:
+      container_name: ${{ steps.build_params.outputs.container_name }}
+      maven_changelist: ${{ steps.build_params.outputs.maven_changelist }}
+      maven_sha1: ${{ steps.build_params.outputs.maven_sha1 }}
+      github_branch_name: ${{ steps.build_params.outputs.github_ref_branch_name }}
+      github_short_sha: ${{ steps.build_params.outputs.github_short_sha }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Define Build Parameters
+        id: build_params
+        uses: actions/github-script@v3
+        with:
+          script: |
+            const scriptPath = require('path').resolve('./.github/workflows/scripts/build_parameters.js')
+              , buildParameters = require(scriptPath);
+            ;
+            buildParameters(context, core).injectBuildParameters();
+
+
+  build:
+    name: Build, Test and Package
+    runs-on: ubuntu-latest
+
+    needs:
+      - build_parameters
+
+    defaults:
+      run:
+        working-directory: application
+
+    # We need to share details across job boundaries, expose the step outs at the job level
+    outputs:
+      container_registry: ${{ steps.maven_build.outputs.container_registry }}
+      container_image: ${{ steps.maven_build.outputs.container_image }}
+      container_version: ${{ steps.maven_build.outputs.container_version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+
+      # Utilize caching of the resolved plugins and dependencies from previous Maven builds to provide
+      # faster builds when dependencies have not changed.
+      - name: Cache Maven repository
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          # Hash on the POM file as that would need to change to modify the dependencies or plugins in use
+          key: mvn-${{ matrix.java }}-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            mvn-${{ matrix.java }}-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+            mvn-${{ matrix.java }}-${{ runner.os }}
+            mvn-${{ matrix.java }}
+            mvn-
+
+      - name: Build Test and Package
+        id: maven_build
+        run: |
+          mvn package -B \
+            -Dsha1="${{ needs.build_parameters.outputs.maven_sha1 }}" \
+            -Dchangelist="${{ needs.build_parameters.outputs.maven_changelist }}" \
+            -Dgithub.repository="${GITHUB_REPOSITORY}" \
+            -Dcontainer.image.name="${{ needs.build_parameters.outputs.container_name }}"
+        shell: bash
+
+      # Publish the container if we successfully build under Linux
+      - name: Sign in to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
+          registry: ghcr.io
+
+      - name: Publish Container image
+        id: container_publish
+        run: |
+          docker push ${{ steps.maven_build.outputs.container_registry }}/${{ steps.maven_build.outputs.container_image }}:${{ steps.maven_build.outputs.container_version }}
+
+      - name: Publish App Container as a Status
+        id: container_image_status
+        uses: Sibz/github-status-action@v1
+        with:
+          authToken: ${{ secrets.GITHUB_TOKEN }}
+          state: success
+          context: Container Image Published - App
+          description: ${{ steps.maven_build.outputs.container_image }}:${{ steps.maven_build.outputs.container_version }}
+
+  deploy:
+    name: Create Deployment
+    runs-on: ubuntu-latest
+
+    needs:
+      - build_parameters
+      - build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Get temporary token for creating deployment
+        id: temp_token
+        uses: peter-murray/workflow-application-token-action@v1
+        with:
+          application_id: ${{ secrets.REPO_AUTOMATION_APPLICATION_ID }}
+          application_private_key: ${{ secrets.REPO_AUTOMATION_APPLICATION_KEY }}
+
+      - name: Create Deployment
+        id: create_deployment
+        uses: actions/github-script@v3
+        env:
+          container_registry: ${{ needs.build.outputs.container_registry }}
+
+          app_container_image: ${{ needs.build.outputs.container_image }}
+          app_container_version: ${{ needs.build.outputs.container_version }}
+
+          sha: ${{ needs.build_parameters.outputs.github_short_sha }}
+        with:
+          github-token: ${{ steps.temp_token.outputs.token }}
+          script: |
+            const scriptPath = require('path').resolve('./.github/workflows/scripts/create_deployment.js')
+              , createDeployment = require(scriptPath);
+            ;
+
+            // Request deployment CD pipeline (qa > prod)
+            await createDeployment({
+              context: context,
+              github: github,
+              environment: 'qa',
+              containerRegistry: process.env.container_registry,
+              appContainerImage: process.env.app_container_image,
+              appContainerVersion: process.env.app_container_version,
+              sha: process.env.sha,
+              head: context.ref,
+            });

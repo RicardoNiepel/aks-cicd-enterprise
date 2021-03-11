@@ -13,6 +13,7 @@ jobs:
       app_container_image: ${{ steps.deployment_data.outputs.app_container_image }}
       app_container_version: ${{ steps.deployment_data.outputs.app_container_version }}
       deployment_github_head: ${{ steps.deployment_data.outputs.deployment_github_head }}
+      environment: ${{ steps.deployment_data.outputs.environment }}
 
     steps:
       - name: Checkout Sources
@@ -36,9 +37,11 @@ jobs:
     needs:
       - deploy_details
 
+    # environment: ${{ needs.deploy_details.outputs.environment }}
+
     env:
       GHCR_APP_IMAGE: ghcr.io/${{ needs.deploy_details.outputs.app_container_image }}:${{ needs.deploy_details.outputs.app_container_version }}
-      ACR_APP_IMAGE: akscicddevacrb1ce1.azurecr.io/${{ needs.deploy_details.outputs.app_container_image }}:${{ needs.deploy_details.outputs.app_container_version }}
+      ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.deploy_details.outputs.app_container_image }}:${{ needs.deploy_details.outputs.app_container_version }}
 
     steps:
       - name: Sign in to GitHub Container Registry
@@ -57,7 +60,7 @@ jobs:
           creds: ${{ secrets.AZURE_SUBSCRIPTION }}
       - name: ACR Login
         run: |
-          az acr login --name akscicddevacrb1ce1.azurecr.io
+          az acr login --name ${{ secrets.ACR }}
       - name: Push GHCR containers to ACR
         run: |
           docker push $ACR_APP_IMAGE
@@ -70,11 +73,14 @@ jobs:
       - deploy_details
       - mirror_containers
 
+    # environment: ${{ needs.deploy_details.outputs.environment }}
+
     env:
-      AKS_RESOURCE_GROUP: 'aks_cicd_dev_rg'
-      AKS_NAME: 'akscicddev-aks-b1ce1'
+      DEPLOYMENT_PREFIX: ${{ secrets.DEPLOYMENT_PREFIX }} # e.g. 'aks-cicd-dev'
+      AKS_RESOURCE_GROUP: ${{ secrets.AKS_RESOURCE_GROUP }} # e.g. 'aks_cicd_dev_rg'
+      AKS_NAME: ${{ secrets.AKS_NAME }} # e.g. 'akscicddev-aks-b1ce1'
       AKS_APP_NAMESPACE: ${{ needs.deploy_details.outputs.deployment_github_head }}
-      ACR_APP_IMAGE: akscicddevacrb1ce1.azurecr.io/${{ needs.deploy_details.outputs.app_container_image }}
+      ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.deploy_details.outputs.app_container_image }} # e.g. ACR = 'akscicddevacrb1ce1.azurecr.io'
       ACR_APP_IMAGE_TAG: ${{ needs.deploy_details.outputs.app_container_version }}
 
     steps:
@@ -87,15 +93,25 @@ jobs:
         run: az aks get-credentials --resource-group ${{ env.AKS_RESOURCE_GROUP }} --name ${{ env.AKS_NAME }} --overwrite-existing --admin
         shell: bash
       - name: Run Helm Deploy
+        
         working-directory: application/helm-charts
         run: ./helm_deploy_all.ps1 -Image "${{ env.ACR_APP_IMAGE }}" -Tag "${{ env.ACR_APP_IMAGE_TAG }}" -Namespace "${{ env.AKS_APP_NAMESPACE }}"
         shell: pwsh
         env:
           AZURE_CREDENTIALS: ${{ secrets.AZURE_SUBSCRIPTION }}
+      - name: Get Deployment URL
+        id: get_deployment_url
+        run: |
+          NodeResourceGroup=$(az aks show -g ${{ env.AKS_RESOURCE_GROUP }} -n ${{ env.AKS_NAME }} -o tsv --query nodeResourceGroup)
+          
+          IngressFQDN=$(az network public-ip show -n ${{ env.DEPLOYMENT_PREFIX }} -g $NodeResourceGroup -o tsv --query dnsSettings.fqdn)
+
+          DeploymentURL="http://${IngressFQDN}/"
+          echo "::set-output name=DeploymentURL::${DeploymentURL}"
       - name: Report Success
         uses: actions/github-script@v3
         env:
-          environment_url: ${{ steps.terraform_output.outputs.stdout }}
+          environment_url: ${{ steps.get_deployment_url.outputs.DeploymentURL }}
         with:
           script: |
             const scriptPath = require('path').resolve('./.github/workflows/scripts/deploymentManager.js')
