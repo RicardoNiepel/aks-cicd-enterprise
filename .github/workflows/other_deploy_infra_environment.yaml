@@ -28,23 +28,13 @@ jobs:
     name: Deploy infrastructure using Terraform to Azure
     runs-on: ubuntu-latest
     steps:
-      - name: Get Deployment URL
-        id: get_deployment_url
-        run: |
-          DeploymentURL="http:///"
-          echo $DeploymentURL
-          echo "${DeploymentURL}"
+      - uses: actions/checkout@master
       - name: Print Inputs
         run: |
           echo "Azure Secret Name: ${{ github.event.inputs.azureSecretName }}"
           echo "Environment Name: ${{ github.event.inputs.environmentName }}"
           echo "Prefix: ${{ github.event.inputs.prefix }}"
           echo "Location: ${{ github.event.inputs.location }}"
-
-          DeploymentURL="hallo welt"
-          echo $DeploymentURL
-
-      - uses: actions/checkout@master
       - name: Azure Login
         uses: Azure/login@v1
         with:
