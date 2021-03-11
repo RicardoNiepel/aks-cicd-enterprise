@@ -36,7 +36,6 @@ jobs:
             ;
             buildParameters(context, core).injectBuildParameters();
 
-
   build:
     name: Build, Test and Package
     runs-on: ubuntu-latest
@@ -109,54 +108,21 @@ jobs:
           context: Container Image Published - App
           description: ${{ steps.maven_build.outputs.container_image }}:${{ steps.maven_build.outputs.container_version }}
 
-  mirror_containers_qa:
-    name: Mirror Containers to ACR in QA
-    runs-on: ubuntu-latest
-
-    needs:
-      - build
-
-    environment: qa
-
-    env:
-      GHCR_APP_IMAGE: ghcr.io/${{ needs.build.outputs.container_image }}:${{ needs.build.outputs.container_version }}
-      ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.build.outputs.container_image }}:${{ needs.build.outputs.container_version }}
-
-    steps:
-      - name: Sign in to GitHub Container Registry
-        uses: docker/login-action@v1
-        with:
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.CR_PAT }}
-          registry: ghcr.io
-      - name: Fetch Container Images from GHCR and Tag for ACR
-        run: |
-          docker pull $GHCR_APP_IMAGE
-          docker tag $GHCR_APP_IMAGE $ACR_APP_IMAGE
-      - name: Azure Login
-        uses: Azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_SUBSCRIPTION }}
-      - name: ACR Login
-        run: |
-          az acr login --name ${{ secrets.ACR }}
-      - name: Push GHCR containers to ACR
-        run: |
-          docker push $ACR_APP_IMAGE
-
   deploy_qa:
     name: Deploy to QA
     runs-on: ubuntu-latest
 
     needs:
       - build
-      - mirror_containers_qa
 
     environment:
       name: qa
       url: ${{ steps.get_deployment_url.outputs.DeploymentURL }}
 
     env:
+      GHCR_APP_IMAGE: ghcr.io/${{ needs.build.outputs.container_image }}:${{ needs.build.outputs.container_version }}
+      ACR_APP_IMAGE_FULL: ${{ secrets.ACR }}/${{ needs.build.outputs.container_image }}:${{ needs.build.outputs.container_version }}
+
       DEPLOYMENT_PREFIX: ${{ secrets.DEPLOYMENT_PREFIX }} # e.g. 'aks-cicd-dev'
       AKS_RESOURCE_GROUP: ${{ secrets.AKS_RESOURCE_GROUP }} # e.g. 'aks_cicd_dev_rg'
       AKS_NAME: ${{ secrets.AKS_NAME }} # e.g. 'akscicddev-aks-b1ce1'
@@ -166,15 +132,30 @@ jobs:
 
     steps:
       - uses: actions/checkout@master
+      - name: Sign in to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
+          registry: ghcr.io
+      - name: Fetch Container Images from GHCR and Tag for ACR
+        run: |
+          docker pull $GHCR_APP_IMAGE
+          docker tag $GHCR_APP_IMAGE $ACR_APP_IMAGE_FULL
       - name: Azure Login
         uses: Azure/login@v1
         with:
           creds: ${{ secrets.AZURE_SUBSCRIPTION }}
+      - name: ACR Login
+        run: |
+          az acr login --name ${{ secrets.ACR }}
+      - name: Push GHCR containers to ACR
+        run: |
+          docker push $ACR_APP_IMAGE_FULL
       - name: AZ AKS Login
         run: az aks get-credentials --resource-group ${{ env.AKS_RESOURCE_GROUP }} --name ${{ env.AKS_NAME }} --overwrite-existing --admin
         shell: bash
       - name: Run Helm Deploy
-        
         working-directory: application/helm-charts
         run: ./helm_deploy_all.ps1 -Image "${{ env.ACR_APP_IMAGE }}" -Tag "${{ env.ACR_APP_IMAGE_TAG }}" -Namespace "${{ env.AKS_APP_NAMESPACE }}"
         shell: pwsh
@@ -190,59 +171,23 @@ jobs:
           DeploymentURL="http://${IngressFQDN}/"
           echo $DeploymentURL
           echo "::set-output name=DeploymentURL::${DeploymentURL}"
-
-  mirror_containers_prod:
-    name: Mirror Containers to ACR in PROD
-    runs-on: ubuntu-latest
-
-    needs:
-      - build
-      - mirror_containers_qa
-      - deploy_qa
-
-    environment: prod
-
-    env:
-      GHCR_APP_IMAGE: ghcr.io/${{ needs.build.outputs.container_image }}:${{ needs.build.outputs.container_version }}
-      ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.build.outputs.container_image }}:${{ needs.build.outputs.container_version }}
-
-    steps:
-      - name: Sign in to GitHub Container Registry
-        uses: docker/login-action@v1
-        with:
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.CR_PAT }}
-          registry: ghcr.io
-      - name: Fetch Container Images from GHCR and Tag for ACR
-        run: |
-          docker pull $GHCR_APP_IMAGE
-          docker tag $GHCR_APP_IMAGE $ACR_APP_IMAGE
-      - name: Azure Login
-        uses: Azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_SUBSCRIPTION }}
-      - name: ACR Login
-        run: |
-          az acr login --name ${{ secrets.ACR }}
-      - name: Push GHCR containers to ACR
-        run: |
-          docker push $ACR_APP_IMAGE
+          echo "::set-output name=DeploymentURL::http://13717.westeurope.cloudapp.azure.com/"
 
   deploy_prod:
-    name: Deploy to Prod
+    name: Deploy to PROD
     runs-on: ubuntu-latest
 
     needs:
       - build
-      - mirror_containers_qa
-      - deploy_qa
-      - mirror_containers_prod
 
     environment:
       name: prod
       url: ${{ steps.get_deployment_url.outputs.DeploymentURL }}
 
     env:
+      GHCR_APP_IMAGE: ghcr.io/${{ needs.build.outputs.container_image }}:${{ needs.build.outputs.container_version }}
+      ACR_APP_IMAGE_FULL: ${{ secrets.ACR }}/${{ needs.build.outputs.container_image }}:${{ needs.build.outputs.container_version }}
+
       DEPLOYMENT_PREFIX: ${{ secrets.DEPLOYMENT_PREFIX }} # e.g. 'aks-cicd-dev'
       AKS_RESOURCE_GROUP: ${{ secrets.AKS_RESOURCE_GROUP }} # e.g. 'aks_cicd_dev_rg'
       AKS_NAME: ${{ secrets.AKS_NAME }} # e.g. 'akscicddev-aks-b1ce1'
@@ -252,15 +197,30 @@ jobs:
 
     steps:
       - uses: actions/checkout@master
+      - name: Sign in to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
+          registry: ghcr.io
+      - name: Fetch Container Images from GHCR and Tag for ACR
+        run: |
+          docker pull $GHCR_APP_IMAGE
+          docker tag $GHCR_APP_IMAGE $ACR_APP_IMAGE_FULL
       - name: Azure Login
         uses: Azure/login@v1
         with:
           creds: ${{ secrets.AZURE_SUBSCRIPTION }}
+      - name: ACR Login
+        run: |
+          az acr login --name ${{ secrets.ACR }}
+      - name: Push GHCR containers to ACR
+        run: |
+          docker push $ACR_APP_IMAGE_FULL
       - name: AZ AKS Login
         run: az aks get-credentials --resource-group ${{ env.AKS_RESOURCE_GROUP }} --name ${{ env.AKS_NAME }} --overwrite-existing --admin
         shell: bash
       - name: Run Helm Deploy
-        
         working-directory: application/helm-charts
         run: ./helm_deploy_all.ps1 -Image "${{ env.ACR_APP_IMAGE }}" -Tag "${{ env.ACR_APP_IMAGE_TAG }}" -Namespace "${{ env.AKS_APP_NAMESPACE }}"
         shell: pwsh
@@ -275,4 +235,5 @@ jobs:
 
           DeploymentURL="http://${IngressFQDN}/"
           echo $DeploymentURL
-          echo "::set-output name=DeploymentURL::${DeploymentURL}"      
+          echo "::set-output name=DeploymentURL::${DeploymentURL}"
+          echo "::set-output name=DeploymentURL::http://13717.westeurope.cloudapp.azure.com/"

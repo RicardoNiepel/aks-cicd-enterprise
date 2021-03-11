@@ -8,6 +8,9 @@ jobs:
     name: Define Deployment Details
     runs-on: ubuntu-latest
 
+    if: |
+      startsWith(github.event.deployment.environment, 'dev')
+
     outputs:
       container_registry: ${{ steps.deployment_data.outputs.container_registry }}
       app_container_image: ${{ steps.deployment_data.outputs.app_container_image }}
@@ -34,6 +37,9 @@ jobs:
   mirror_containers:
     name: Mirror Containers to ACR in DEV
     runs-on: ubuntu-latest
+
+    if: |
+      startsWith(github.event.deployment.environment, 'dev')
 
     needs:
       - deploy_details
@@ -68,6 +74,9 @@ jobs:
     name: Deploy to DEV
     runs-on: ubuntu-latest
 
+    if: |
+      startsWith(github.event.deployment.environment, 'dev')
+      
     needs:
       - deploy_details
       - mirror_containers
