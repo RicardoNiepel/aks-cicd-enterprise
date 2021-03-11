@@ -9,7 +9,7 @@ name: Build, Test and Deploy Application - Production
 
 on:
   push:
-    branches-ignore:
+    branches:
       - main
 
 jobs:
