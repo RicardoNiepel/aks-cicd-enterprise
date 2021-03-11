@@ -84,7 +84,7 @@ jobs:
     env:
       AKS_RESOURCE_GROUP: ${{ secrets.AKS_RESOURCE_GROUP }} # e.g. 'aks_cicd_dev_rg'
       AKS_NAME: ${{ secrets.AKS_NAME }} # e.g. 'akscicddev-aks-b1ce1'
-      AKS_APP_NAMESPACE: ${{ needs.deploy_details.outputs.deployment_github_head }}
+      AKS_APP_NAMESPACE: ${{ github.event.deployment.environment }}
       ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.deploy_details.outputs.app_container_image }} # e.g. ACR = 'akscicddevacrb1ce1.azurecr.io'
       ACR_APP_IMAGE_TAG: ${{ needs.deploy_details.outputs.app_container_version }}
 
