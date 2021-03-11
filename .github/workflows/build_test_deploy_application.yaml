@@ -179,6 +179,7 @@ jobs:
 
     needs:
       - build
+      - deploy_qa
 
     environment:
       name: prod
