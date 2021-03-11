@@ -37,7 +37,7 @@ jobs:
     needs:
       - deploy_details
 
-    environment: ${{ needs.deploy_details.outputs.environment }}
+    # environment: ${{ needs.deploy_details.outputs.environment }}
 
     env:
       GHCR_APP_IMAGE: ghcr.io/${{ needs.deploy_details.outputs.app_container_image }}:${{ needs.deploy_details.outputs.app_container_version }}
@@ -73,7 +73,7 @@ jobs:
       - deploy_details
       - mirror_containers
 
-    environment: ${{ needs.deploy_details.outputs.environment }}
+    # environment: ${{ needs.deploy_details.outputs.environment }}
 
     env:
       DEPLOYMENT_PREFIX: ${{ secrets.DEPLOYMENT_PREFIX }} # e.g. 'aks-cicd-dev'
