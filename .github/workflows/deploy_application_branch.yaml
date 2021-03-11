@@ -1,0 +1,130 @@
+name: Deploy Application - Branch
+
+on:
+  deployment:
+
+jobs:
+  deploy_details:
+    name: Define Deployment Details
+    runs-on: ubuntu-latest
+
+    outputs:
+      container_registry: ${{ steps.deployment_data.outputs.container_registry }}
+      app_container_image: ${{ steps.deployment_data.outputs.app_container_image }}
+      app_container_version: ${{ steps.deployment_data.outputs.app_container_version }}
+      deployment_github_head: ${{ steps.deployment_data.outputs.deployment_github_head }}
+      deployment_sha: ${{ steps.deployment_data.outputs.deployment_sha }}
+      environment: ${{ steps.deployment_data.outputs.environment }}
+
+    steps:
+      - name: Checkout Sources
+        uses: actions/checkout@v2
+
+      - name: Extract Deployment Details and Report Deployment in Progress
+        id: deployment_data
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const scriptPath = require('path').resolve('./.github/workflows/scripts/unpack_deployment_payload.js')
+              , deploymentPayload = require(scriptPath);
+            ;
+            await deploymentPayload(context, core, github).unpackAndStart();
+
+  mirror_containers:
+    name: Mirror Containers to Azure Container Registry
+    runs-on: ubuntu-latest
+
+    needs:
+      - deploy_details
+
+    env:
+      GHCR_APP_IMAGE: ghcr.io/${{ needs.deploy_details.outputs.app_container_image }}:${{ needs.deploy_details.outputs.app_container_version }}
+      ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.deploy_details.outputs.app_container_image }}:${{ needs.deploy_details.outputs.app_container_version }}
+
+    steps:
+      - name: Sign in to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
+          registry: ghcr.io
+      - name: Fetch Container Images from GHCR and Tag for ACR
+        run: |
+          docker pull $GHCR_APP_IMAGE
+          docker tag $GHCR_APP_IMAGE $ACR_APP_IMAGE
+      - name: Azure Login
+        uses: Azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_SUBSCRIPTION }}
+      - name: ACR Login
+        run: |
+          az acr login --name ${{ secrets.ACR }}
+      - name: Push GHCR containers to ACR
+        run: |
+          docker push $ACR_APP_IMAGE
+
+  deploy_dev:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+
+    needs:
+      - deploy_details
+      - mirror_containers
+
+    env:
+      DEPLOYMENT_PREFIX: ${{ secrets.DEPLOYMENT_PREFIX }} # e.g. 'aks-cicd-dev'
+      AKS_RESOURCE_GROUP: ${{ secrets.AKS_RESOURCE_GROUP }} # e.g. 'aks_cicd_dev_rg'
+      AKS_NAME: ${{ secrets.AKS_NAME }} # e.g. 'akscicddev-aks-b1ce1'
+      AKS_APP_NAMESPACE: ${{ (needs.deploy_details.outputs.environment == 'qa' || needs.deploy_details.outputs.environment == 'prod') && needs.deploy_details.outputs.environment || needs.deploy_details.outputs.deployment_github_head }}
+      ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.deploy_details.outputs.app_container_image }} # e.g. ACR = 'akscicddevacrb1ce1.azurecr.io'
+      ACR_APP_IMAGE_TAG: ${{ needs.deploy_details.outputs.app_container_version }}
+
+    steps:
+      - uses: actions/checkout@master
+      - name: Azure Login
+        uses: Azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_SUBSCRIPTION }}
+      - name: AZ AKS Login
+        run: az aks get-credentials --resource-group ${{ env.AKS_RESOURCE_GROUP }} --name ${{ env.AKS_NAME }} --overwrite-existing --admin
+        shell: bash
+      - name: Run Helm Deploy
+        
+        working-directory: application/helm-charts
+        run: ./helm_deploy_all.ps1 -Image "${{ env.ACR_APP_IMAGE }}" -Tag "${{ env.ACR_APP_IMAGE_TAG }}" -Namespace "${{ env.AKS_APP_NAMESPACE }}"
+        shell: pwsh
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_SUBSCRIPTION }}
+      - name: Get Deployment URL
+        id: get_deployment_url
+        run: |
+          NodeResourceGroup=$(az aks show -g ${{ env.AKS_RESOURCE_GROUP }} -n ${{ env.AKS_NAME }} -o tsv --query nodeResourceGroup)
+          
+          IngressFQDN=$(az network public-ip show -n ${{ env.DEPLOYMENT_PREFIX }} -g $NodeResourceGroup -o tsv --query dnsSettings.fqdn)
+
+          DeploymentURL="http://${IngressFQDN}/"
+          echo "::set-output name=DeploymentURL::${DeploymentURL}"
+      - name: Report Success
+        uses: actions/github-script@v3
+        env:
+          environment_url: ${{ steps.get_deployment_url.outputs.DeploymentURL }}
+        with:
+          script: |
+            const scriptPath = require('path').resolve('./.github/workflows/scripts/deploymentManager.js')
+              , DeploymentManager = require(scriptPath)
+              ;
+            const manager = new DeploymentManager(context, github);
+            await manager.activateDeployment(context.payload.deployment.id, process.env.environment_url);
+      - name: Report Failure
+        if: failure()
+        uses: octokit/request-action@v1.x
+        with:
+          route: POST /repos/:owner/:repo/deployments/:deployment_id/statuses
+          deployment_id: ${{ github.event.deployment.id }}
+          description: "Deploy failed for ${{ github.event.deployment.environment }}"
+          environment: ${{ github.event.deployment.environment }}
+          state: "failure"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
