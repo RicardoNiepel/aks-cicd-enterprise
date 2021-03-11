@@ -123,7 +123,7 @@ module.exports = class DeploymentLabel {
     const commentBody = `
 👋 Request for ${label} received...
     
-Starting Deployment to __test${environmentRegexResult[1]}__ environment:
+Starting Deployment to __${environmentRegexResult[1]}__ environment:
 |Container|Image Name|Version|
 |-|-|-|
 ${containerTableEntries.join('\n')}
