@@ -2,7 +2,7 @@
 // Creates a Deployment using the provided data
 //
 
-module.exports = async(payload) => {
+module.exports = async (payload) => {
 
   const environment = validateParameter(payload, 'environment'),
     context = validateParameter(payload, 'context'),
@@ -13,8 +13,26 @@ module.exports = async(payload) => {
     sha = validateParameter(payload, 'sha'),
     head = validateParameter(payload, 'head');
 
-  const isProduction = /^prod-.*/.test(environment),
-    deploymentEnvironment = isProduction ? environment : `${environment}-${head}`;
+  deploymentEnvironment = environment;
+  transient_environment = false;
+  production_environment = false;
+  switch (environment) {
+    case 'dev':
+      deploymentEnvironment = `dev-${head}`;
+      transient_environment = true;
+      production_environment = false;
+      break;
+    case 'qa':
+      transient_environment = false;
+      production_environment = false;
+      break;
+    case 'prod':
+      transient_environment = false;
+      production_environment = true;
+      break;
+    default:
+      throw new Error(`Environment '${environment}' is not supported.`);
+  }
 
   // A deployment payload for passing information of the components for the deployment
   const deploymentPayload = {
@@ -38,8 +56,8 @@ module.exports = async(payload) => {
     payload: JSON.stringify(deploymentPayload),
     environment: deploymentEnvironment,
     description: `Deploy to ${environment}`,
-    transient_environment: !isProduction,
-    production_environment: false, // Defaulting all environments to not be production types for now
+    transient_environment: transient_environment,
+    production_environment: production_environment,
     mediaType: { previews: ["flash", "ant-man"] }
   });
 }
