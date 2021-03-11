@@ -19,7 +19,7 @@ module.exports = async (payload) => {
   switch (environment) {
     case 'dev':
       deploymentEnvironment = `dev-${head}`;
-      transient_environment = true;
+      transient_environment = false;
       production_environment = false;
       break;
     case 'qa':
