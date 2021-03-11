@@ -1,4 +1,4 @@
-name: Build and Test Application - Branch
+name: Build & Test App - Branch
 
 #
 # This workflow provides a continuous integration workflow for all feature branches
