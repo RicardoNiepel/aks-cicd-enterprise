@@ -34,6 +34,10 @@ jobs:
           echo "Environment Name: ${{ github.event.inputs.environmentName }}"
           echo "Prefix: ${{ github.event.inputs.prefix }}"
           echo "Location: ${{ github.event.inputs.location }}"
+
+          DeploymentURL="hallo welt"
+          echo $DeploymentURL
+
       - uses: actions/checkout@master
       - name: Azure Login
         uses: Azure/login@v1
