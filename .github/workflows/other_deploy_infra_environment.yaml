@@ -24,18 +24,16 @@ defaults:
   run:
     working-directory: infrastructure
 jobs:
-  printInputs:
-    runs-on: ubuntu-latest
-    steps:
-    - run: |
-        echo "Azure Secret Name: ${{ github.event.inputs.azureSecretName }}"
-        echo "Environment Name: ${{ github.event.inputs.environmentName }}"
-        echo "Prefix: ${{ github.event.inputs.prefix }}"
-        echo "location: ${{ github.event.inputs.location }}"
   deploy:
     name: Deploy infrastructure using Terraform to Azure
     runs-on: ubuntu-latest
     steps:
+      - name: Print Inputs
+        run: |
+          echo "Azure Secret Name: ${{ github.event.inputs.azureSecretName }}"
+          echo "Environment Name: ${{ github.event.inputs.environmentName }}"
+          echo "Prefix: ${{ github.event.inputs.prefix }}"
+          echo "Location: ${{ github.event.inputs.location }}"
       - uses: actions/checkout@master
       - name: Azure Login
         uses: Azure/login@v1
