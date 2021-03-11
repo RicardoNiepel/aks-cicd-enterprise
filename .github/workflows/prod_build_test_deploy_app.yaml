@@ -7,7 +7,10 @@ name: Prod - Build, Test & Deploy App
 on:
   push:
     branches:
-      - main
+    - main
+    paths-ignore:
+    - '.github/workflows/other_deploy_infra_environment.yaml'
+    - 'infrastructure/**'
 
 jobs:
   build_parameters:
