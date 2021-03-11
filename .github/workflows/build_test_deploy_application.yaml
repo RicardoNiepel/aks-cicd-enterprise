@@ -168,6 +168,8 @@ jobs:
           IngressFQDN=$(az network public-ip list -g $NodeResourceGroup --query "[?contains(@.name, 'aks')==\`true\`]" -o tsv --query dnsSettings.fqdn)
 
           DeploymentURL="http://${IngressFQDN}/"
+          echo $DeploymentURL
+          echo "${DeploymentURL}"
           echo "::set-output name=DeploymentURL::${DeploymentURL}"
 
   deploy_prod:

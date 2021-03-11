@@ -1,0 +1,28 @@
+name: Cleanup unused Deployments
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        required: true
+        description: 'The Name of the environment to delete'
+        default: 'dev-RicardoNiepel-patch-1'
+      onlyRemoveDeployments:
+        required: true
+        description: 'Delete only deployments and NOT the environment.'
+        default: 'true'
+      onlyDeactivateDeployments:
+        required: true
+        description: 'Deactivate the deployments but don`t remove deployments or environment.'
+        default: 'false'
+
+jobs:
+  delete:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: strumwolf/delete-deployment-environment@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          environment: ${{ github.event.inputs.environment }}
+          onlyRemoveDeployments: ${{ github.event.inputs.onlyRemoveDeployments }}
+          onlyDeactivateDeployments: ${{ github.event.inputs.onlyDeactivateDeployments }}
