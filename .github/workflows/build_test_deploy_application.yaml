@@ -114,13 +114,13 @@ jobs:
     runs-on: ubuntu-latest
 
     needs:
-      - deploy_details
+      - build
 
     environment: qa
 
     env:
-      GHCR_APP_IMAGE: ghcr.io/${{ needs.deploy_details.outputs.app_container_image }}:${{ needs.deploy_details.outputs.app_container_version }}
-      ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.deploy_details.outputs.app_container_image }}:${{ needs.deploy_details.outputs.app_container_version }}
+      GHCR_APP_IMAGE: ghcr.io/${{ needs.build.outputs.container_image }}:${{ needs.build.outputs.container_version }}
+      ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.build.outputs.container_image }}:${{ needs.build.outputs.container_version }}
 
     steps:
       - name: Sign in to GitHub Container Registry
@@ -150,7 +150,7 @@ jobs:
     runs-on: ubuntu-latest
 
     needs:
-      - deploy_details
+      - build
       - mirror_containers_qa
 
     environment:
@@ -161,9 +161,9 @@ jobs:
       DEPLOYMENT_PREFIX: ${{ secrets.DEPLOYMENT_PREFIX }} # e.g. 'aks-cicd-dev'
       AKS_RESOURCE_GROUP: ${{ secrets.AKS_RESOURCE_GROUP }} # e.g. 'aks_cicd_dev_rg'
       AKS_NAME: ${{ secrets.AKS_NAME }} # e.g. 'akscicddev-aks-b1ce1'
-      AKS_APP_NAMESPACE: ${{ (needs.deploy_details.outputs.environment == 'qa' || needs.deploy_details.outputs.environment == 'prod') && needs.deploy_details.outputs.environment || needs.deploy_details.outputs.deployment_github_head }}
-      ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.deploy_details.outputs.app_container_image }} # e.g. ACR = 'akscicddevacrb1ce1.azurecr.io'
-      ACR_APP_IMAGE_TAG: ${{ needs.deploy_details.outputs.app_container_version }}
+      AKS_APP_NAMESPACE: bookstore-advanced
+      ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.build.outputs.container_image }} # e.g. ACR = 'akscicddevacrb1ce1.azurecr.io'
+      ACR_APP_IMAGE_TAG: ${{ needs.build.outputs.container_version }}
 
     steps:
       - uses: actions/checkout@master
@@ -197,15 +197,15 @@ jobs:
     runs-on: ubuntu-latest
 
     needs:
-      - deploy_details
+      - build
       - mirror_containers_qa
       - deploy_qa
 
     environment: prod
 
     env:
-      GHCR_APP_IMAGE: ghcr.io/${{ needs.deploy_details.outputs.app_container_image }}:${{ needs.deploy_details.outputs.app_container_version }}
-      ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.deploy_details.outputs.app_container_image }}:${{ needs.deploy_details.outputs.app_container_version }}
+      GHCR_APP_IMAGE: ghcr.io/${{ needs.build.outputs.container_image }}:${{ needs.build.outputs.container_version }}
+      ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.build.outputs.container_image }}:${{ needs.build.outputs.container_version }}
 
     steps:
       - name: Sign in to GitHub Container Registry
@@ -235,7 +235,7 @@ jobs:
     runs-on: ubuntu-latest
 
     needs:
-      - deploy_details
+      - build
       - mirror_containers_qa
       - deploy_qa
       - mirror_containers_prod
@@ -248,9 +248,9 @@ jobs:
       DEPLOYMENT_PREFIX: ${{ secrets.DEPLOYMENT_PREFIX }} # e.g. 'aks-cicd-dev'
       AKS_RESOURCE_GROUP: ${{ secrets.AKS_RESOURCE_GROUP }} # e.g. 'aks_cicd_dev_rg'
       AKS_NAME: ${{ secrets.AKS_NAME }} # e.g. 'akscicddev-aks-b1ce1'
-      AKS_APP_NAMESPACE: ${{ (needs.deploy_details.outputs.environment == 'qa' || needs.deploy_details.outputs.environment == 'prod') && needs.deploy_details.outputs.environment || needs.deploy_details.outputs.deployment_github_head }}
-      ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.deploy_details.outputs.app_container_image }} # e.g. ACR = 'akscicddevacrb1ce1.azurecr.io'
-      ACR_APP_IMAGE_TAG: ${{ needs.deploy_details.outputs.app_container_version }}
+      AKS_APP_NAMESPACE: bookstore-advanced
+      ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.build.outputs.container_image }} # e.g. ACR = 'akscicddevacrb1ce1.azurecr.io'
+      ACR_APP_IMAGE_TAG: ${{ needs.build.outputs.container_version }}
 
     steps:
       - uses: actions/checkout@master
