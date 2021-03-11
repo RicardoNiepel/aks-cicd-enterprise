@@ -18,9 +18,11 @@ on:
 
 jobs:
   delete:
+    name: Delete Deployment Environments
     runs-on: ubuntu-latest
     steps:
-      - uses: strumwolf/delete-deployment-environment@v2
+      - name: Delete Deployment Environments
+        uses: strumwolf/delete-deployment-environment@v1.1.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           environment: ${{ github.event.inputs.environment }}

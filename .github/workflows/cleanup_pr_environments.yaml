@@ -12,7 +12,7 @@ on:
 
 jobs:
   clean:
-    name: Cleanup Review apps
+    name: Cleanup PR Environments
     runs-on: ubuntu-latest
 
     steps:
