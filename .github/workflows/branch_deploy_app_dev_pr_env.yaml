@@ -108,7 +108,7 @@ jobs:
         run: |
           NodeResourceGroup=$(az aks show -g ${{ env.AKS_RESOURCE_GROUP }} -n ${{ env.AKS_NAME }} -o tsv --query nodeResourceGroup)
           
-          IngressFQDN=$(az network public-ip list -g $NodeResourceGroup --query "[?contains(@.name, 'aks')==\`true\`]" -o tsv --query dnsSettings.fqdn)
+          IngressFQDN=$(az network public-ip list -g $NodeResourceGroup --query "[?contains(@.name, 'aks')==\`true\`].dnsSettings.fqdn" -o tsv)
 
           DeploymentURL="http://${IngressFQDN}/"
           echo "::set-output name=DeploymentURL::${DeploymentURL}"
