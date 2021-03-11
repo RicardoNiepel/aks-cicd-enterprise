@@ -1,4 +1,4 @@
-name: Deploy Application
+name: Deploy Application - Branch
 
 on:
   deployment:
@@ -66,13 +66,16 @@ jobs:
         run: |
           docker push $ACR_APP_IMAGE
 
-  deploy:
-    name: Deploy Helm Charts to Azure Kubernetes Service
+  deploy_dev:
+    name: Deploy to Dev
     runs-on: ubuntu-latest
 
     needs:
       - deploy_details
       - mirror_containers
+
+    if: |
+      needs.deploy_details.outputs.environment != 'qa' && needs.deploy_details.outputs.environment != 'prod'
 
     # environment: ${{ needs.deploy_details.outputs.environment }}
 
@@ -131,53 +134,153 @@ jobs:
           state: "failure"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  deploy_prod:
-    name: Create Deployment for Prod
+  
+  deploy_qa:
+    name: Deploy to QA
     runs-on: ubuntu-latest
 
     needs:
       - deploy_details
-      - deploy
+      - mirror_containers
 
     if: |
       needs.deploy_details.outputs.environment == 'qa'
 
+    environment:
+      name: qa
+      url: ${{ steps.get_deployment_url.outputs.DeploymentURL }}
+
+    env:
+      DEPLOYMENT_PREFIX: ${{ secrets.DEPLOYMENT_PREFIX }} # e.g. 'aks-cicd-dev'
+      AKS_RESOURCE_GROUP: ${{ secrets.AKS_RESOURCE_GROUP }} # e.g. 'aks_cicd_dev_rg'
+      AKS_NAME: ${{ secrets.AKS_NAME }} # e.g. 'akscicddev-aks-b1ce1'
+      AKS_APP_NAMESPACE: ${{ (needs.deploy_details.outputs.environment == 'qa' || needs.deploy_details.outputs.environment == 'prod') && needs.deploy_details.outputs.environment || needs.deploy_details.outputs.deployment_github_head }}
+      ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.deploy_details.outputs.app_container_image }} # e.g. ACR = 'akscicddevacrb1ce1.azurecr.io'
+      ACR_APP_IMAGE_TAG: ${{ needs.deploy_details.outputs.app_container_version }}
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Get temporary token for creating deployment
-        id: temp_token
-        uses: peter-murray/workflow-application-token-action@v1
+      - uses: actions/checkout@master
+      - name: Azure Login
+        uses: Azure/login@v1
         with:
-          application_id: ${{ secrets.REPO_AUTOMATION_APPLICATION_ID }}
-          application_private_key: ${{ secrets.REPO_AUTOMATION_APPLICATION_KEY }}
-
-      - name: Create Deployment
-        id: create_deployment
-        uses: actions/github-script@v3
+          creds: ${{ secrets.AZURE_SUBSCRIPTION }}
+      - name: AZ AKS Login
+        run: az aks get-credentials --resource-group ${{ env.AKS_RESOURCE_GROUP }} --name ${{ env.AKS_NAME }} --overwrite-existing --admin
+        shell: bash
+      - name: Run Helm Deploy
+        
+        working-directory: application/helm-charts
+        run: ./helm_deploy_all.ps1 -Image "${{ env.ACR_APP_IMAGE }}" -Tag "${{ env.ACR_APP_IMAGE_TAG }}" -Namespace "${{ env.AKS_APP_NAMESPACE }}"
+        shell: pwsh
         env:
-          container_registry: ${{ needs.deploy_details.outputs.container_registry }}
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_SUBSCRIPTION }}
+      - name: Get Deployment URL
+        id: get_deployment_url
+        run: |
+          NodeResourceGroup=$(az aks show -g ${{ env.AKS_RESOURCE_GROUP }} -n ${{ env.AKS_NAME }} -o tsv --query nodeResourceGroup)
+          
+          IngressFQDN=$(az network public-ip show -n ${{ env.DEPLOYMENT_PREFIX }} -g $NodeResourceGroup -o tsv --query dnsSettings.fqdn)
 
-          app_container_image: ${{ needs.deploy_details.outputs.app_container_image }}
-          app_container_version: ${{ needs.deploy_details.outputs.app_container_version }}
+          DeploymentURL="http://${IngressFQDN}/"
+          echo "::set-output name=DeploymentURL::${DeploymentURL}"
 
-          sha: ${{ needs.deploy_details.outputs.deployment_sha }}
+  deploy_prod:
+    name: Deploy to Prod
+    runs-on: ubuntu-latest
+
+    needs:
+      - deploy_details
+      - mirror_containers
+      - deploy_qa
+
+    if: |
+      needs.deploy_details.outputs.environment == 'qa'
+
+    environment:
+      name: prod
+      url: ${{ steps.get_deployment_url.outputs.DeploymentURL }}
+
+    env:
+      DEPLOYMENT_PREFIX: ${{ secrets.DEPLOYMENT_PREFIX }} # e.g. 'aks-cicd-dev'
+      AKS_RESOURCE_GROUP: ${{ secrets.AKS_RESOURCE_GROUP }} # e.g. 'aks_cicd_dev_rg'
+      AKS_NAME: ${{ secrets.AKS_NAME }} # e.g. 'akscicddev-aks-b1ce1'
+      AKS_APP_NAMESPACE: ${{ (needs.deploy_details.outputs.environment == 'qa' || needs.deploy_details.outputs.environment == 'prod') && needs.deploy_details.outputs.environment || needs.deploy_details.outputs.deployment_github_head }}
+      ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.deploy_details.outputs.app_container_image }} # e.g. ACR = 'akscicddevacrb1ce1.azurecr.io'
+      ACR_APP_IMAGE_TAG: ${{ needs.deploy_details.outputs.app_container_version }}
+
+    steps:
+      - uses: actions/checkout@master
+      - name: Azure Login
+        uses: Azure/login@v1
         with:
-          github-token: ${{ steps.temp_token.outputs.token }}
-          script: |
-            const scriptPath = require('path').resolve('./.github/workflows/scripts/create_deployment.js')
-              , createDeployment = require(scriptPath);
-            ;
+          creds: ${{ secrets.AZURE_SUBSCRIPTION }}
+      - name: AZ AKS Login
+        run: az aks get-credentials --resource-group ${{ env.AKS_RESOURCE_GROUP }} --name ${{ env.AKS_NAME }} --overwrite-existing --admin
+        shell: bash
+      - name: Run Helm Deploy
+        
+        working-directory: application/helm-charts
+        run: ./helm_deploy_all.ps1 -Image "${{ env.ACR_APP_IMAGE }}" -Tag "${{ env.ACR_APP_IMAGE_TAG }}" -Namespace "${{ env.AKS_APP_NAMESPACE }}"
+        shell: pwsh
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_SUBSCRIPTION }}
+      - name: Get Deployment URL
+        id: get_deployment_url
+        run: |
+          NodeResourceGroup=$(az aks show -g ${{ env.AKS_RESOURCE_GROUP }} -n ${{ env.AKS_NAME }} -o tsv --query nodeResourceGroup)
+          
+          IngressFQDN=$(az network public-ip show -n ${{ env.DEPLOYMENT_PREFIX }} -g $NodeResourceGroup -o tsv --query dnsSettings.fqdn)
 
-            await createDeployment({
-              context: context,
-              github: github,
-              environment: 'prod',
-              containerRegistry: process.env.container_registry,
-              appContainerImage: process.env.app_container_image,
-              appContainerVersion: process.env.app_container_version,
-              sha: process.env.sha,
-              head: context.ref,
-            });
+          DeploymentURL="http://${IngressFQDN}/"
+          echo "::set-output name=DeploymentURL::${DeploymentURL}"          
+
+  # deploy_prod:
+  #   name: Create Deployment for Prod
+  #   runs-on: ubuntu-latest
+
+  #   needs:
+  #     - deploy_details
+  #     - mirror_containers
+  #     - deploy
+
+  #   if: |
+  #     needs.deploy_details.outputs.environment == 'qa'
+
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v2
+
+  #     - name: Get temporary token for creating deployment
+  #       id: temp_token
+  #       uses: peter-murray/workflow-application-token-action@v1
+  #       with:
+  #         application_id: ${{ secrets.REPO_AUTOMATION_APPLICATION_ID }}
+  #         application_private_key: ${{ secrets.REPO_AUTOMATION_APPLICATION_KEY }}
+
+  #     - name: Create Deployment
+  #       id: create_deployment
+  #       uses: actions/github-script@v3
+  #       env:
+  #         container_registry: ${{ needs.deploy_details.outputs.container_registry }}
+
+  #         app_container_image: ${{ needs.deploy_details.outputs.app_container_image }}
+  #         app_container_version: ${{ needs.deploy_details.outputs.app_container_version }}
+
+  #         sha: ${{ needs.deploy_details.outputs.deployment_sha }}
+  #       with:
+  #         github-token: ${{ steps.temp_token.outputs.token }}
+  #         script: |
+  #           const scriptPath = require('path').resolve('./.github/workflows/scripts/create_deployment.js')
+  #             , createDeployment = require(scriptPath);
+  #           ;
+
+  #           await createDeployment({
+  #             context: context,
+  #             github: github,
+  #             environment: 'prod',
+  #             containerRegistry: process.env.container_registry,
+  #             appContainerImage: process.env.app_container_image,
+  #             appContainerVersion: process.env.app_container_version,
+  #             sha: process.env.sha,
+  #             head: context.ref,
+  #           });
