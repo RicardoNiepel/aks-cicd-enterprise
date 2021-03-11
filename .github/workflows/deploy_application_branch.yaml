@@ -85,7 +85,7 @@ jobs:
       DEPLOYMENT_PREFIX: ${{ secrets.DEPLOYMENT_PREFIX }} # e.g. 'aks-cicd-dev'
       AKS_RESOURCE_GROUP: ${{ secrets.AKS_RESOURCE_GROUP }} # e.g. 'aks_cicd_dev_rg'
       AKS_NAME: ${{ secrets.AKS_NAME }} # e.g. 'akscicddev-aks-b1ce1'
-      AKS_APP_NAMESPACE: ${{ (needs.deploy_details.outputs.environment == 'qa' || needs.deploy_details.outputs.environment == 'prod') && needs.deploy_details.outputs.environment || needs.deploy_details.outputs.deployment_github_head }}
+      AKS_APP_NAMESPACE: ${{ needs.deploy_details.outputs.deployment_github_head }}
       ACR_APP_IMAGE: ${{ secrets.ACR }}/${{ needs.deploy_details.outputs.app_container_image }} # e.g. ACR = 'akscicddevacrb1ce1.azurecr.io'
       ACR_APP_IMAGE_TAG: ${{ needs.deploy_details.outputs.app_container_version }}
 
@@ -99,7 +99,6 @@ jobs:
         run: az aks get-credentials --resource-group ${{ env.AKS_RESOURCE_GROUP }} --name ${{ env.AKS_NAME }} --overwrite-existing --admin
         shell: bash
       - name: Run Helm Deploy
-        
         working-directory: application/helm-charts
         run: ./helm_deploy_all.ps1 -Image "${{ env.ACR_APP_IMAGE }}" -Tag "${{ env.ACR_APP_IMAGE_TAG }}" -Namespace "${{ env.AKS_APP_NAMESPACE }}"
         shell: pwsh

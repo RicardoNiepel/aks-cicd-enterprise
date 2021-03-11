@@ -1,0 +1,45 @@
+name: Undeploy Application - Branch
+
+on:
+  deployment_status
+
+jobs:
+  destroy:
+    name: Undeploy Application
+    if: github.event.deployment_status.state == 'failure' && contains(github.event.deployment.environment, 'dev')
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 5
+
+    env:
+      AKS_RESOURCE_GROUP: ${{ secrets.AKS_RESOURCE_GROUP }} # e.g. 'aks_cicd_dev_rg'
+      AKS_NAME: ${{ secrets.AKS_NAME }} # e.g. 'akscicddev-aks-b1ce1'
+      AKS_APP_NAMESPACE: ${{ needs.deploy_details.outputs.deployment_github_head }}
+
+    steps:
+      - uses: actions/checkout@master
+      - name: Azure Login
+        uses: Azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_SUBSCRIPTION }}
+      - name: AZ AKS Login
+        run: az aks get-credentials --resource-group ${{ env.AKS_RESOURCE_GROUP }} --name ${{ env.AKS_NAME }} --overwrite-existing --admin
+        shell: bash
+      - name: Run Helm Delete
+        working-directory: application/helm-charts
+        run: ./helm_undeploy_all.ps1 -Namespace "${{ env.AKS_APP_NAMESPACE }}"
+        shell: pwsh
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_SUBSCRIPTION }}
+      - name: Remove Environment
+        if: success()
+        uses: actions/github-script@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log(`Removing Deployment after Helm Delete: ${context.payload.deployment.id}:${context.payload.deployment.environment}`);
+
+            await github.repos.deleteDeployment({
+              ...context.repo,
+              deployment_id: context.payload.deployment.id
+            });
