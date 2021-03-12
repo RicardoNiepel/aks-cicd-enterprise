@@ -19,7 +19,7 @@ module.exports = async (payload) => {
   switch (environment) {
     case 'dev':
       deploymentEnvironment = `dev-${head}`;
-      transient_environment = false;
+      transient_environment = false; // this seems to make Inactive=Destroyed and does not trigger deployment_status anymore
       production_environment = false;
       break;
     case 'qa':

@@ -4,16 +4,16 @@ on:
   deployment_status
 
 jobs:
-  print:
-    name: Print Infos
-    runs-on: ubuntu-latest
+  # print:
+  #   name: Print Infos
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@master
-      - name: Print Deploy Status
-        run: |
-          echo "state: ${{ github.event.deployment_status.state }}"
-          echo "environment: ${{ github.event.deployment.environment }}"
+  #   steps:
+  #     - uses: actions/checkout@master
+  #     - name: Print Deploy Status
+  #       run: |
+  #         echo "state: ${{ github.event.deployment_status.state }}"
+  #         echo "environment: ${{ github.event.deployment.environment }}"
   
   destroy:
     name: Undeploy Application
