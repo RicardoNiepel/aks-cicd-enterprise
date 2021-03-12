@@ -19,6 +19,7 @@ It also leverages the following new features from [Universe 2020](https://github
   - [Create Azure Service Principal](#create-azure-service-principal)
   - [After Infra Deployments: Store Environment Information](#after-infra-deployments-store-environment-information)
 - [Possible Improvements](#possible-improvements)
+  - [Version Strategy](#version-strategy)
   - [App Workflow](#app-workflow)
   - [Infra Workflow](#infra-workflow)
 - [Credits](#credits)
@@ -66,22 +67,26 @@ For the QA and PROD environments the new built-in way of GitHub environments & e
 
 1. Look at the ```CODEOWNERS``` file and the owner of ```application/pom.xml```
 2. Inspect the infra deployment files at ```infrastructure/``` including the wrapper ```tf.ps1```
-3. Look into the workflow ```.github/workflows/other_deploy_infra_environment.yaml``` and see how it can be manually be triggered
-4. Navigate to ```application/src/main/webapp/books.html``` and change something, make sure to commit this change into a new branch like ```RicardoNiepel-patch-1``` and create a PR for it
+3. Look into the workflow ```.github/workflows/other_deploy_infra_environment.yaml``` and  
+   see how it can be manually be triggered
+4. Navigate to ```application/src/main/webapp/books.html``` and change something,  
+   make sure to commit this change into a new branch like ```RicardoNiepel-patch-1``` and create a PR for it
 5. See how the ```Branch - Build & Test App``` was triggered and executed as required checks
    1. Take a look into the ```Branch protection rules``` and see the required status checks to pass before merging
    2. Look into ```.github/workflows/branch_build_test_app.yaml``` and see the last two steps: GHCR and Status
 6. Label the PR with ```Deploy to Test``` and see how the bot starts the workflow
    1. Look into ```.github/workflows/branch_create_app_deployment_by_label.yaml``` and the ```.github/workflows/scripts/``` folder
-   2. Recognize another workflow was triggered: ```Branch - Deploy App to PR Environment```, look into it and also the file ```.github/workflows/branch_deploy_app_dev_pr_env.yaml```
+   2. Recognize another workflow was triggered: ```Branch - Deploy App to PR Environment```,  
+      look into it and also the file ```.github/workflows/branch_deploy_app_dev_pr_env.yaml```
    3. See also inside the PR the published deployment URL which we can use to test the PR
    4. Go to ```aks-cicd-enterprise/deployments``` to see a dynamic Environment was created
    5. Merge the PR and see how the deployment is marked as inactive
    6. See how two different workflows are started ```Branch - Cleanup PR Environments``` and ```Prod - Build, Test & Deploy App```
 7. Look into ```Branch - Undeploy App``` and how it deletes the PR environment
    1. Refresh the old URL to see it was deleted
-8. Look into ```Prod - Build, Test & Deploy App```
-   1. See at ```.github/workflows/prod_build_test_deploy_app.yaml``` how it uses the environment name and url field
+8.  Look into ```Prod - Build, Test & Deploy App```
+   1. See at ```.github/workflows/prod_build_test_deploy_app.yaml```  
+      how it uses the environment name and url field
    2. Wait for QA be deployed, look into it and approve prod
    3. Show the deployments overview
 
@@ -148,6 +153,10 @@ Please store the following for the DEV environment as ```Repository secrets``` a
 ## Possible Improvements
 
 Following are some possible improvements to have a more advanced workflow.
+
+### Version Strategy
+
+Implement a proper version strategy, for example based on release tags.
 
 ### App Workflow
 
