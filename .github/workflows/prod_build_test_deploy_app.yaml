@@ -11,6 +11,8 @@ on:
     paths-ignore:
     - '.github/workflows/other_deploy_infra_environment.yaml'
     - 'infrastructure/**'
+    - 'CODEOWNERS'
+    - 'README.md'
 
 jobs:
   build_parameters:
