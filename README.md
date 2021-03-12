@@ -40,7 +40,7 @@ We focus in this sample on the following
 
 This repository implements the following for fulfilling the requirements above.
 
-As always it is just a sample and needs to be adjusted for product/project specific requirements.  
+As always it is just a sample, little bit simplified (only one app, no db, ...) and needs to be adjusted for product/project specific requirements.  
 But it a definitely a good place to start.
 
 * the entire Azure infrastructure provisioning is automated with [Terraform](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)
