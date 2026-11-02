@@ -1,3 +1,27 @@
+terraform {
+  required_version = ">= 0.13.2"
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "=2.33.0"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "=1.11.3"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "=1.2.2"
+    }
+    null = {
+      source  = "hashicorp/null"
+    }
+    random = {
+      source  = "hashicorp/random"
+    }
+  }
+}
+
 # Configure the Azure Provider
 # https://github.com/MicrosoftDocs/azure-docs/blob/master/articles/terraform/terraform-create-k8s-cluster-with-tf-and-aks.md
 provider "azurerm" {
