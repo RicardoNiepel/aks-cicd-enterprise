@@ -3,6 +3,7 @@ resource "azurerm_key_vault" "akskv" {
   location                    = azurerm_resource_group.aksrg.location
   resource_group_name         = azurerm_resource_group.aksrg.name
   enabled_for_disk_encryption = false
+  rbac_authorization_enabled  = false
   tenant_id                   = data.azurerm_client_config.current.tenant_id
 
   sku_name = "standard"
@@ -22,7 +23,7 @@ resource "azurerm_key_vault" "akskv" {
 #   name         = "appinsights-key"
 #   value        = azurerm_application_insights.aksainsights.instrumentation_key
 #   key_vault_id = azurerm_key_vault.aksvault.id
-  
+
 #   tags = {
 #     environment = var.environment_name
 #   }

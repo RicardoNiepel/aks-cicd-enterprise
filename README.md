@@ -90,6 +90,17 @@ For the QA and PROD environments the new built-in way of GitHub environments & e
    2. Wait for QA be deployed, look into it and approve prod
    3. Show the deployments overview
 
+### Terraform versioning
+
+The infrastructure requires Terraform 1.17.1 or later. The deployment workflow uses
+`tf.ps1 -DownloadTerraform` to download the version enforced by the wrapper. Provider
+requirements are constrained to their current major versions, and
+`infrastructure/.terraform.lock.hcl` records the selected provider releases and checksums.
+
+When upgrading providers, run `terraform init -upgrade`, `terraform fmt`, and
+`terraform validate` from `infrastructure/`, review and commit the updated lock file, and
+inspect a Terraform plan before applying infrastructure changes.
+
 ## Configuration
 
 ### Create Environments

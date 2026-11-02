@@ -8,38 +8,38 @@ resource "azurerm_public_ip" "nginx_ingress_pip" {
 }
 
 resource "helm_release" "nginx_ingress" {
-  name      = "ingress-nginx"
-  chart     = "ingress-nginx"
+  name       = "ingress-nginx"
+  chart      = "ingress-nginx"
   repository = "https://kubernetes.github.io/ingress-nginx"
-  namespace = kubernetes_namespace.nginx_ingress.metadata[0].name
+  namespace  = one(kubernetes_namespace_v1.nginx_ingress.metadata).name
 
-  set {
-    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-resource-group"
-    value = azurerm_public_ip.nginx_ingress_pip.resource_group_name
-  }
+  set = [
+    {
+      name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-resource-group"
+      value = azurerm_public_ip.nginx_ingress_pip.resource_group_name
+    },
+    {
+      name  = "controller.service.loadBalancerIP"
+      value = azurerm_public_ip.nginx_ingress_pip.ip_address
+    },
+    {
+      name  = "controller.extraArgs.default-ssl-certificate"
+      value = "$(POD_NAMESPACE)/${one(kubernetes_secret_v1.nginx_ingress_default_ssl_certificate.metadata).name}"
+    }
+  ]
 
-  set {
-    name  = "controller.service.loadBalancerIP"
-    value = azurerm_public_ip.nginx_ingress_pip.ip_address
-  }
-
-  set {
-    name  = "controller.extraArgs.default-ssl-certificate"
-    value = "$(POD_NAMESPACE)/${kubernetes_secret.nginx_ingress_default_ssl_certificate.metadata[0].name}"
-  }
-
-  depends_on = [kubernetes_secret.nginx_ingress_default_ssl_certificate]
+  depends_on = [kubernetes_secret_v1.nginx_ingress_default_ssl_certificate]
 }
 
-resource "kubernetes_secret" "nginx_ingress_default_ssl_certificate" {
+resource "kubernetes_secret_v1" "nginx_ingress_default_ssl_certificate" {
 
   metadata {
     name      = "default-ssl-certificate"
-    namespace = kubernetes_namespace.nginx_ingress.metadata[0].name
+    namespace = one(kubernetes_namespace_v1.nginx_ingress.metadata).name
   }
 
   data = {
-    // Decode to avoid double encoding as the 'kubernetes_secret' provider automatically encodes in base64
+    // Decode to avoid double encoding as the Kubernetes provider encodes secret data.
     "tls.crt" = base64decode(var.tls_cert_base64)
     "tls.key" = base64decode(var.tls_key_base64)
   }
@@ -49,4 +49,9 @@ resource "kubernetes_secret" "nginx_ingress_default_ssl_certificate" {
 
 output "AKS_INGRESS_FQDN" {
   value = azurerm_public_ip.nginx_ingress_pip.fqdn
+}
+
+moved {
+  from = kubernetes_secret.nginx_ingress_default_ssl_certificate
+  to   = kubernetes_secret_v1.nginx_ingress_default_ssl_certificate
 }

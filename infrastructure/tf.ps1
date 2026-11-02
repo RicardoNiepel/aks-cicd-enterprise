@@ -107,7 +107,7 @@ Set-StrictMode -Version latest
 $ErrorActionPreference = "Stop"
 
 $ScriptVersion = [version]"2.3.0"
-$TerrafomMinimumVersion = [version]"1.5.7"
+$TerraformMinimumVersion = [version]"1.17.1"
 $TerraformNoColor = if ($NoColor) { @("-no-color") } else { @() }
 $TerraformPlanPath = "terraform.tfplan"
 $TerraformOutputPath = "output.json"
@@ -121,7 +121,7 @@ if ($UtilResourceGroupName -eq "") {
 #The specified location '/home/vsts/work/1/s' is invalid. A location must consist of characters, whitespace, digit, or following symbols '(,)'.
 $CurrentLocation = get-location
 Write-Verbose "Current working location: $CurrentLocation"
-if ($Location -match $CurrentLocation)
+if ($Location -eq $CurrentLocation)
 {
     Write-Warning "Found un-expected content in -Location: $Location . Fallback to 'westeurope'"
     $Location = "westeurope"
@@ -256,12 +256,12 @@ function VerifyTerraformSignature {
 
 function DownloadCurrentTerraformVersionToTemporaryLocation {
     $osName = GetTerraformOsName
-    $uriBinary = "https://releases.hashicorp.com/terraform/$TerrafomMinimumVersion/terraform_$($TerrafomMinimumVersion)_$($osName)_amd64.zip"
-    $uriShaSums = "https://releases.hashicorp.com/terraform/$TerrafomMinimumVersion/terraform_$($TerrafomMinimumVersion)_SHA256SUMS"
-    $uriShaSumsSig = "https://releases.hashicorp.com/terraform/$TerrafomMinimumVersion/terraform_$($TerrafomMinimumVersion)_SHA256SUMS.sig"
+    $uriBinary = "https://releases.hashicorp.com/terraform/$TerraformMinimumVersion/terraform_$($TerraformMinimumVersion)_$($osName)_amd64.zip"
+    $uriShaSums = "https://releases.hashicorp.com/terraform/$TerraformMinimumVersion/terraform_$($TerraformMinimumVersion)_SHA256SUMS"
+    $uriShaSumsSig = "https://releases.hashicorp.com/terraform/$TerraformMinimumVersion/terraform_$($TerraformMinimumVersion)_SHA256SUMS.sig"
 
     $tmpDirectory = New-TemporaryDirectory
-    $outputBinary = Join-Path -Path $tmpDirectory -ChildPath "terraform_$($TerrafomMinimumVersion)_$($osName)_amd64.zip"
+    $outputBinary = Join-Path -Path $tmpDirectory -ChildPath "terraform_$($TerraformMinimumVersion)_$($osName)_amd64.zip"
     $outputShaSums = Join-Path -Path $tmpDirectory -ChildPath "terraform_SHA265SUMS"
     $outputShaSumsSig = Join-Path -Path $tmpDirectory -ChildPath "terraform_SHA265SUMS.sig"
 
@@ -288,7 +288,7 @@ function ValidateTerraformMinimumVersion {
     $versionStr = &"$TerraformPath" --% -version
     if ($LastExitCode -gt 0) { throw "Cannot validate terraform version." }
 
-    [Regex]$regex = "v(?<versionNumber>\d+.\d+.\d+)"
+    [Regex]$regex = "v(?<versionNumber>\d+\.\d+\.\d+)"
     $regexMatch = $regex.Match($versionStr)
     if ($regexMatch.Success) {
         $versionInfo = [Version]$($regexMatch.Groups["versionNumber"].Value)
@@ -297,8 +297,8 @@ function ValidateTerraformMinimumVersion {
         throw "Cannot get version number from terraform."
     }
 
-    if (!$($versionInfo -ge $TerrafomMinimumVersion)) {
-        throw "Require at least terraform v$TerrafomMinimumVersion but found terraform v$versionInfo."
+    if (!$($versionInfo -ge $TerraformMinimumVersion)) {
+        throw "Require at least terraform v$TerraformMinimumVersion but found terraform v$versionInfo."
     }
 }
 
@@ -829,4 +829,3 @@ if ($Init -or $Destroy -or $Plan -or $Apply -or $Output) {
 } else {
     Write-Warning "Nothing modified or initialized. Please specify, -Init, -Destroy, -Plan or -Apply"
 }
-
