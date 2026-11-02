@@ -107,7 +107,7 @@ Set-StrictMode -Version latest
 $ErrorActionPreference = "Stop"
 
 $ScriptVersion = [version]"2.3.0"
-$TerrafomMinimumVersion = [version]"0.13.2"
+$TerrafomMinimumVersion = [version]"1.5.7"
 $TerraformNoColor = if ($NoColor) { "-no-color" } else { "" }
 $TerraformPlanPath = "terraform.tfplan"
 $TerraformOutputPath = "output.json"
