@@ -1,5 +1,7 @@
 terraform {
   required_version = ">= 0.13.2"
+
+  # 1. 统一声明 Provider 来源与版本
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -20,7 +22,16 @@ terraform {
       source  = "hashicorp/random"
     }
   }
+
+  # 2. 统一声明远端状态后端
+  backend "azurerm" {
+    key = "terraform.tfstate"
+  }
 }
+
+# ------------------------------------------------------------------
+# Provider 实例配置
+# ------------------------------------------------------------------
 
 provider "azurerm" {
   features {}
