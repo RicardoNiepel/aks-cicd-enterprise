@@ -108,7 +108,7 @@ $ErrorActionPreference = "Stop"
 
 $ScriptVersion = [version]"2.3.0"
 $TerrafomMinimumVersion = [version]"1.5.7"
-$TerraformNoColor = if ($NoColor) { "-no-color" } else { "" }
+$TerraformNoColor = if ($NoColor) { @("-no-color") } else { @() }
 $TerraformPlanPath = "terraform.tfplan"
 $TerraformOutputPath = "output.json"
 
@@ -490,9 +490,9 @@ function TerraformPlan {
         Set-Location -Path $Path
 
         if ($VarFile) {
-            &"$TerraformPath" plan $TerraformNoColor -input=false -var-file="$VarFile" -out="`"$TerraformPlanPath`""
+            &"$TerraformPath" plan @TerraformNoColor -input=false -var-file="$VarFile" -out="`"$TerraformPlanPath`""
         } else {
-            &"$TerraformPath" plan $TerraformNoColor -input=false -out="`"$TerraformPlanPath`""
+            &"$TerraformPath" plan @TerraformNoColor -input=false -out="`"$TerraformPlanPath`""
         }
         if ($LastExitCode -gt 0) { throw "terraform error." }
     }
@@ -523,7 +523,7 @@ function TerraformApply {
             }
         }
 
-        &"$TerraformPath" apply $TerraformNoColor -input=false "`"$TerraformPlanPath`""
+        &"$TerraformPath" apply @TerraformNoColor -input=false "`"$TerraformPlanPath`""
         if ($LastExitCode -gt 0) { throw "terraform error." }
     }
     finally {
@@ -554,9 +554,9 @@ function TerraformDestroy {
         }
 
         if ($VarFile) {
-            &"$TerraformPath" destroy $TerraformNoColor -auto-approve -input=false -var-file="$VarFile"
+            &"$TerraformPath" destroy @TerraformNoColor -auto-approve -input=false -var-file="$VarFile"
         } else {
-            &"$TerraformPath" destroy $TerraformNoColor -auto-approve -input=false
+            &"$TerraformPath" destroy @TerraformNoColor -auto-approve -input=false
         }
         if ($LastExitCode -gt 0) { throw "terraform error." }
     }
@@ -578,7 +578,7 @@ function TerraformOutput {
     try {
         Set-Location -Path $Path
 
-        $terrafomOutput = &"$TerraformPath" output $TerraformNoColor -json
+        $terrafomOutput = &"$TerraformPath" output @TerraformNoColor -json
         if ($LastExitCode -gt 0) { throw "terraform error." }
 
         Set-Content -Path $TerraformOutputPath  -Value $terrafomOutput
@@ -622,7 +622,7 @@ function InitTerraformWithRemoteBackend {
     Push-Location
     try {
         Set-Location -Path $Path
-        &"$TerraformPath" init $TerraformNoColor -backend-config "resource_group_name=$UtilResourceGroupName" -backend-config "storage_account_name=$($global:TfStateStorageAccountName)" -backend-config "container_name=$($global:TfStateContainerName)" -backend-config "access_key=`"$key`""
+        &"$TerraformPath" init @TerraformNoColor -backend-config "resource_group_name=$UtilResourceGroupName" -backend-config "storage_account_name=$($global:TfStateStorageAccountName)" -backend-config "container_name=$($global:TfStateContainerName)" -backend-config "access_key=`"$key`""
         if ($LastExitCode -gt 0) { throw "terraform error." }
     }
     finally {
@@ -640,7 +640,7 @@ function InitTerraformWithLocalBackend {
     Push-Location
     try {
         Set-Location -Path $Path
-        $ignoreOutput = &"$TerraformPath" init -backend=false $TerraformNoColor
+        $ignoreOutput = &"$TerraformPath" init -backend=false @TerraformNoColor
         if ($LastExitCode -gt 0) { 
             Write-Error $ignoreOutput
             throw "terraform error."
