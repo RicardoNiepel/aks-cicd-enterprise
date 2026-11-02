@@ -616,20 +616,31 @@ function InitTerraformWithRemoteBackend {
 
     Write-Verbose "[Terraform] Init: $Path"
 
-    $accountKeyResponse = az storage account keys list --account-name $global:TfStateStorageAccountName | ConvertFrom-Json
+    # 1. 显式指定资源组，确保精准查询
+    $accountKeyResponse = az storage account keys list --resource-group $UtilResourceGroupName --account-name $global:TfStateStorageAccountName | ConvertFrom-Json
+    if ($LastExitCode -gt 0) { 
+        throw "az CLI error: Failed to retrieve storage account keys for $($global:TfStateStorageAccountName)." 
+    }
+
+    # 2. 校验获取到的 Key 是否为空
+    if (-not $accountKeyResponse -or -not $accountKeyResponse[0].value) {
+        throw "Storage account key is null or empty. Cannot initialize backend."
+    }
+
+    # 3. 清洗 Key
     $key = -join ($accountKeyResponse[0].value -split '\s')
 
     Push-Location
     try {
         Set-Location -Path $Path
-        &"$TerraformPath" init @TerraformNoColor -backend-config "resource_group_name=$UtilResourceGroupName" -backend-config "storage_account_name=$($global:TfStateStorageAccountName)" -backend-config "container_name=$($global:TfStateContainerName)" -backend-config "access_key=`"$key`""
+        # 4. 规范传参
+        &"$TerraformPath" init @TerraformNoColor -backend-config "resource_group_name=$UtilResourceGroupName" -backend-config "storage_account_name=$($global:TfStateStorageAccountName)" -backend-config "container_name=$($global:TfStateContainerName)" -backend-config "access_key=$key"
         if ($LastExitCode -gt 0) { throw "terraform error." }
     }
     finally {
         Pop-Location
     }
 }
-
 function InitTerraformWithLocalBackend {
     param (
         [Parameter(Mandatory = $true)]
