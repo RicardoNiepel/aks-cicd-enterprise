@@ -18,7 +18,7 @@ on:
       location:
         description: 'The deployment location used for all Azure artefacts.'
         required: true
-        default: 'northeurope'
+        default: 'centralus'
 
 defaults:
   run:
