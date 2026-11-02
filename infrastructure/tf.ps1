@@ -617,7 +617,7 @@ function InitTerraformWithRemoteBackend {
     Write-Verbose "[Terraform] Init: $Path"
 
     $accountKeyResponse = az storage account keys list --account-name $global:TfStateStorageAccountName | ConvertFrom-Json
-    $key = $accountKeyResponse[0].value
+    $key = ($accountKeyResponse[0].value).Trim()
 
     Push-Location
     try {
