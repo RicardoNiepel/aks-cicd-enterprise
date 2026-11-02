@@ -352,7 +352,7 @@ function CreateOrUpdateTerraformBackend {
     $StorageAccountNamePrefix = $Prefix.Replace("_", "").Replace("-", "").SubString(0, [System.Math]::Min(10, $Prefix.Replace("_", "").Replace("-", "").Length))
     $global:TfStateStorageAccountName = "tf$($StorageAccountNamePrefix)$($EnvironmentName)$($tf_hash_suffix)"
 
-    az storage account create --name $global:TfStateStorageAccountName --resource-group $UtilResourceGroupName --location $Location --sku "Standard_LRS" --kind "BlobStorage" --access-tier "Hot" --encryption-service "blob" --encryption-service "file" --https-only "true" --default-action "Allow" --bypass "None" --output none --tags "environment=$EnvironmentName" "purpose=TerraformStateStorage" "prefix=$Prefix"
+    az storage account create --name $global:TfStateStorageAccountName --resource-group $UtilResourceGroupName --location $Location --sku "Standard_LRS" --kind "StorageV2" --access-tier "Hot" --encryption-service "blob" --encryption-service "file" --https-only "true" --default-action "Allow" --bypass "None" --output none --tags "environment=$EnvironmentName" "purpose=TerraformStateStorage" "prefix=$Prefix"
     if ($LastExitCode -gt 0) { throw "az CLI error." }
 
     if ($SkipFirewallUpdate) {
