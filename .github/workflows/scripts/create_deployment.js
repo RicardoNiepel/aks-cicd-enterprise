@@ -18,7 +18,8 @@ module.exports = async (payload) => {
   production_environment = false;
   switch (environment) {
     case 'dev':
-      deploymentEnvironment = `dev-${head}`;
+      const cleanHead = head.replace(/[^A-Za-z0-9_.-]/g, '-').toLowerCase();
+      deploymentEnvironment = `dev-${cleanHead}`;
       transient_environment = false; // this seems to make Inactive=Destroyed and does not trigger deployment_status anymore
       production_environment = false;
       break;
