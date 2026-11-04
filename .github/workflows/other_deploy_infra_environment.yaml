@@ -19,6 +19,10 @@ on:
         description: 'The deployment location used for all Azure artefacts.'
         required: true
         default: 'centralus'
+      applyordestroy:
+        description: 'Whether to apply or destroy the infrastructure'
+        required: true
+        default: 'Apply'
 
 defaults:
   run:
@@ -40,7 +44,7 @@ jobs:
         with:
           creds: ${{ secrets[github.event.inputs.azureSecretName] }}
       - name: Run Terraform Apply
-        run: ./tf.ps1 -Verbose -Force -Prefix ${{ github.event.inputs.prefix }} -Location ${{ github.event.inputs.location }} -EnvironmentName ${{ github.event.inputs.environmentName }} -TargetPath . -Apply -DownloadTerraform
+        run: ./tf.ps1 -Verbose -Force -Prefix ${{ github.event.inputs.prefix }} -Location ${{ github.event.inputs.location }} -EnvironmentName ${{ github.event.inputs.environmentName }} -TargetPath . -${{ github.event.inputs.applyordestroy }} -DownloadTerraform
         shell: pwsh
         env:
           AZURE_CREDENTIALS: ${{ secrets[github.event.inputs.azureSecretName] }}
