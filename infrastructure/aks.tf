@@ -85,6 +85,7 @@ output "ID" {
 
 output "HOST" {
   value = one(azurerm_kubernetes_cluster.akstf.kube_config).host
+  sensitive = true
 }
 
 output "SERVICE_PRINCIPAL_ID" {
