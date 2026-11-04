@@ -12,7 +12,7 @@ module.exports = class DeploymentManager {
 
     console.log(`Deployed Environment url: '${url}'`);
 
-    const deployment = await github.repos.getDeployment({
+    const deployment = await github.rest.repos.getDeployment({
       ...context.repo,
       deployment_id: deploymentId
     }).then(resp => {
@@ -20,14 +20,11 @@ module.exports = class DeploymentManager {
     });
 
     // Activate the deployment
-    await github.repos.createDeploymentStatus({
+    await github.rest.repos.createDeploymentStatus({
       ...context.repo,
       deployment_id: deployment.id,
       state: 'success',
-      environment_url: url,
-      mediaType: {
-        previews: ['ant-man', 'flash']
-      }
+      environment_url: url
     });
 
     // Get all deployments for the specified environment
@@ -62,7 +59,7 @@ module.exports = class DeploymentManager {
       github = this.github;
 
     //TODO might need to contend with pagination, but in practice this should not be an issue as we are limiting on ref
-    return github.repos.listDeployments({
+    return github.rest.repos.listDeployments({
       ...context.repo,
       ref: ref,
       per_page: 100,
@@ -71,7 +68,7 @@ module.exports = class DeploymentManager {
 
       deployments.data.forEach(deployment => {
         promises.push(
-          github.repos.listDeploymentStatuses({
+          github.rest.repos.listDeploymentStatuses({
             ...context.repo,
             deployment_id: deployment.id,
             per_page: 100,
@@ -88,17 +85,15 @@ module.exports = class DeploymentManager {
                 // Ignore environments that are already in failure state
                 if (currentState !== 'failure') {
                   console.log(`Deployment: ${deployment.id}:${deployment.environment} transitioning to failure`);
-                  return github.repos.createDeploymentStatus({
+                  return github.rest.repos.createDeploymentStatus({
                     ...context.repo,
-                    mediaType: { previews: ["flash", "ant-man"] },
                     deployment_id: deployment.id,
                     state: 'failure',
                     description: 'Pull Request Merged/Closed, triggering removal'
                   }).then(() => {
                     console.log(`Deployment: ${deployment.id}:${deployment.environment} transitioning to inactive`);
-                    return github.repos.createDeploymentStatus({
+                    return github.rest.repos.createDeploymentStatus({
                       ...context.repo,
-                      mediaType: { previews: ["flash", "ant-man"] },
                       deployment_id: deployment.id,
                       state: 'inactive',
                       description: 'Pull Request Merged/Closed, inactivating'
@@ -137,11 +132,10 @@ module.exports = class DeploymentManager {
         const currentStatus = statuses[0].state;
 
         if (currentStatus !== 'inactive') {
-          return github.repos.createDeploymentStatus({
+          return github.rest.repos.createDeploymentStatus({
             ...context.repo,
             deployment_id: deploymentId,
-            state: 'inactive',
-            mediaType: { previews: ['flash', 'ant-man'] }
+            state: 'inactive'
           });
         }
       }

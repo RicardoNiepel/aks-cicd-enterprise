@@ -32,11 +32,8 @@ class DeploymentPayload {
         core.setOutput('container_registry', deploymentPayload.container_registry);
         
         
-        github.repos.createDeploymentStatus({
+        await github.rest.repos.createDeploymentStatus({
             ...this.context.repo,
-            mediaType: {
-                previews: ["flash-preview", "ant-man"]
-            },
             deployment_id: context.payload.deployment.id,
             state: 'in_progress',
             description: 'Deployment from GitHub Actions started',

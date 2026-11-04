@@ -25,9 +25,10 @@ jobs:
 
       - name: Extract Deployment Details and Report Deployment in Progress
         id: deployment_data
-        uses: actions/github-script@v3
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          retries: 3
           script: |
             const scriptPath = require('path').resolve('./.github/workflows/scripts/unpack_deployment_payload.js')
               , deploymentPayload = require(scriptPath);
@@ -118,7 +119,7 @@ jobs:
           DeploymentURL="http://${IngressFQDN}/"
           echo "::set-output name=DeploymentURL::${DeploymentURL}"
       - name: Report Success
-        uses: actions/github-script@v3
+        uses: actions/github-script@v9
         env:
           environment_url: ${{ steps.get_deployment_url.outputs.DeploymentURL }}
         with:
