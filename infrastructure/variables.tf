@@ -22,7 +22,7 @@ variable "environment_name" {
 
 variable "vm_size" {
   type    = string
-  default = "Standard_DS2_v2"
+  default = "Standard_B2s_v2"
 }
 
 variable "tls_cert_base64" {
