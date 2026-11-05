@@ -60,12 +60,9 @@ class BuildParameters {
 
     cleanBranchName(name) {
         const matched = /dependabot\/(.*?)\//.exec(name)
+        const branchName = matched ? `dbot-${matched[1]}` : name;
 
-        if (matched) {
-            return `dbot-${matched[1]}`
-        } else {
-            return name;
-        }
+        return branchName.replace(/[^A-Za-z0-9_.-]/g, '-');
     }
 }
 

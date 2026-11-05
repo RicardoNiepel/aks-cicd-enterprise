@@ -1,11 +1,8 @@
 {{- if .Values.ingress.enabled -}}
 {{- $fullName := include "bookstore-advanced.fullname" . -}}
 {{- $svcPort := .Values.service.port -}}
-{{- if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
-apiVersion: networking.k8s.io/v1beta1
-{{- else -}}
-apiVersion: extensions/v1beta1
-{{- end }}
+{{- $pathType := .Values.ingress.pathType | default "Prefix" -}}
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ $fullName }}
@@ -16,6 +13,9 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
   {{- if .Values.ingress.tls }}
   tls:
     {{- range .Values.ingress.tls }}
@@ -30,10 +30,12 @@ spec:
     - http:
         paths:
           - path: {{ $.Values.ingress.path }}
-            pathType: Prefix
+            pathType: {{ $pathType }}
             backend:
-              serviceName: {{ $fullName }}
-              servicePort: {{ $svcPort }}
+              service:
+                name: {{ $fullName }}
+                port:
+                  number: {{ $svcPort }}
 
     {{- range .Values.ingress.hosts }}
     - host: {{ .host | quote }}
@@ -41,9 +43,12 @@ spec:
         paths:
           {{- range .paths }}
           - path: {{ .path }}
+            pathType: {{ .pathType | default $pathType }}
             backend:
-              serviceName: {{ $fullName }}
-              servicePort: {{ $svcPort }}
+              service:
+                name: {{ $fullName }}
+                port:
+                  number: {{ $svcPort }}
           {{- end }}
     {{- end }}
   {{- end }}

@@ -107,8 +107,8 @@ Set-StrictMode -Version latest
 $ErrorActionPreference = "Stop"
 
 $ScriptVersion = [version]"2.3.0"
-$TerrafomMinimumVersion = [version]"0.13.2"
-$TerraformNoColor = if ($NoColor) { "-no-color" } else { "" }
+$TerraformMinimumVersion = [version]"1.17.1"
+$TerraformNoColor = if ($NoColor) { @("-no-color") } else { @() }
 $TerraformPlanPath = "terraform.tfplan"
 $TerraformOutputPath = "output.json"
 
@@ -121,7 +121,7 @@ if ($UtilResourceGroupName -eq "") {
 #The specified location '/home/vsts/work/1/s' is invalid. A location must consist of characters, whitespace, digit, or following symbols '(,)'.
 $CurrentLocation = get-location
 Write-Verbose "Current working location: $CurrentLocation"
-if ($Location -match $CurrentLocation)
+if ($Location -eq $CurrentLocation)
 {
     Write-Warning "Found un-expected content in -Location: $Location . Fallback to 'westeurope'"
     $Location = "westeurope"
@@ -222,46 +222,14 @@ function VerifyTerraformSignature {
     $tfShaSums = Join-Path -Path $TerraformDownloadBaseFolder -ChildPath "terraform_SHA265SUMS"
     $tfShaSumsSig = Join-Path -Path $TerraformDownloadBaseFolder -ChildPath "terraform_SHA265SUMS.sig"
 
-    # See https://www.hashicorp.com/security.html
-    $HashiCorpGpgSig = @"
------BEGIN PGP PUBLIC KEY BLOCK-----
-Version: GnuPG v1
-
-mQENBFMORM0BCADBRyKO1MhCirazOSVwcfTr1xUxjPvfxD3hjUwHtjsOy/bT6p9f
-W2mRPfwnq2JB5As+paL3UGDsSRDnK9KAxQb0NNF4+eVhr/EJ18s3wwXXDMjpIifq
-fIm2WyH3G+aRLTLPIpscUNKDyxFOUbsmgXAmJ46Re1fn8uKxKRHbfa39aeuEYWFA
-3drdL1WoUngvED7f+RnKBK2G6ZEpO+LDovQk19xGjiMTtPJrjMjZJ3QXqPvx5wca
-KSZLr4lMTuoTI/ZXyZy5bD4tShiZz6KcyX27cD70q2iRcEZ0poLKHyEIDAi3TM5k
-SwbbWBFd5RNPOR0qzrb/0p9ksKK48IIfH2FvABEBAAG0K0hhc2hpQ29ycCBTZWN1
-cml0eSA8c2VjdXJpdHlAaGFzaGljb3JwLmNvbT6JATgEEwECACIFAlMORM0CGwMG
-CwkIBwMCBhUIAgkKCwQWAgMBAh4BAheAAAoJEFGFLYc0j/xMyWIIAIPhcVqiQ59n
-Jc07gjUX0SWBJAxEG1lKxfzS4Xp+57h2xxTpdotGQ1fZwsihaIqow337YHQI3q0i
-SqV534Ms+j/tU7X8sq11xFJIeEVG8PASRCwmryUwghFKPlHETQ8jJ+Y8+1asRydi
-psP3B/5Mjhqv/uOK+Vy3zAyIpyDOMtIpOVfjSpCplVRdtSTFWBu9Em7j5I2HMn1w
-sJZnJgXKpybpibGiiTtmnFLOwibmprSu04rsnP4ncdC2XRD4wIjoyA+4PKgX3sCO
-klEzKryWYBmLkJOMDdo52LttP3279s7XrkLEE7ia0fXa2c12EQ0f0DQ1tGUvyVEW
-WmJVccm5bq25AQ0EUw5EzQEIANaPUY04/g7AmYkOMjaCZ6iTp9hB5Rsj/4ee/ln9
-wArzRO9+3eejLWh53FoN1rO+su7tiXJA5YAzVy6tuolrqjM8DBztPxdLBbEi4V+j
-2tK0dATdBQBHEh3OJApO2UBtcjaZBT31zrG9K55D+CrcgIVEHAKY8Cb4kLBkb5wM
-skn+DrASKU0BNIV1qRsxfiUdQHZfSqtp004nrql1lbFMLFEuiY8FZrkkQ9qduixo
-mTT6f34/oiY+Jam3zCK7RDN/OjuWheIPGj/Qbx9JuNiwgX6yRj7OE1tjUx6d8g9y
-0H1fmLJbb3WZZbuuGFnK6qrE3bGeY8+AWaJAZ37wpWh1p0cAEQEAAYkBHwQYAQIA
-CQUCUw5EzQIbDAAKCRBRhS2HNI/8TJntCAClU7TOO/X053eKF1jqNW4A1qpxctVc
-z8eTcY8Om5O4f6a/rfxfNFKn9Qyja/OG1xWNobETy7MiMXYjaa8uUx5iFy6kMVaP
-0BXJ59NLZjMARGw6lVTYDTIvzqqqwLxgliSDfSnqUhubGwvykANPO+93BBx89MRG
-unNoYGXtPlhNFrAsB1VR8+EyKLv2HQtGCPSFBhrjuzH3gxGibNDDdFQLxxuJWepJ
-EK1UbTS4ms0NgZ2Uknqn1WRU1Ki7rE4sTy68iZtWpKQXZEJa0IGnuI2sSINGcXCJ
-oEIgXTMyCILo34Fa/C6VCm2WBgz9zZO8/rHIiQm1J5zqz0DrDwKBUM9C
-=LYpS
------END PGP PUBLIC KEY BLOCK-----
-"@
-    # TODO: Test for gpg in path instead.
     if ($IsWindows -or $IsMacOS) {
         Write-Warning "Skipping SHA256SUM signature validation on Windows and MacOS. Requires GPG."
     }
     else {
         $hashiCorpGpgTmpFile = Join-Path $TerraformDownloadBaseFolder -ChildPath "hashicorp.gpg"
-        Set-Content -Path $hashiCorpGpgTmpFile -Value $HashiCorpGpgSig
+        
+        Invoke-WebRequest -Uri "https://www.hashicorp.com/.well-known/pgp-key.txt" -OutFile $hashiCorpGpgTmpFile
+        
         gpg --quiet --no-verbose --batch --no-tty --import $hashiCorpGpgTmpFile
         gpg --quiet --no-verbose --batch --no-tty --verify  $tfShaSumsSig $tfShaSums
         if ($LastExitCode -gt 0) { throw "GPG signature validation of Terraform's SHA256 sums failed." }
@@ -288,12 +256,12 @@ oEIgXTMyCILo34Fa/C6VCm2WBgz9zZO8/rHIiQm1J5zqz0DrDwKBUM9C
 
 function DownloadCurrentTerraformVersionToTemporaryLocation {
     $osName = GetTerraformOsName
-    $uriBinary = "https://releases.hashicorp.com/terraform/$TerrafomMinimumVersion/terraform_$($TerrafomMinimumVersion)_$($osName)_amd64.zip"
-    $uriShaSums = "https://releases.hashicorp.com/terraform/$TerrafomMinimumVersion/terraform_$($TerrafomMinimumVersion)_SHA256SUMS"
-    $uriShaSumsSig = "https://releases.hashicorp.com/terraform/$TerrafomMinimumVersion/terraform_$($TerrafomMinimumVersion)_SHA256SUMS.sig"
+    $uriBinary = "https://releases.hashicorp.com/terraform/$TerraformMinimumVersion/terraform_$($TerraformMinimumVersion)_$($osName)_amd64.zip"
+    $uriShaSums = "https://releases.hashicorp.com/terraform/$TerraformMinimumVersion/terraform_$($TerraformMinimumVersion)_SHA256SUMS"
+    $uriShaSumsSig = "https://releases.hashicorp.com/terraform/$TerraformMinimumVersion/terraform_$($TerraformMinimumVersion)_SHA256SUMS.sig"
 
     $tmpDirectory = New-TemporaryDirectory
-    $outputBinary = Join-Path -Path $tmpDirectory -ChildPath "terraform_$($TerrafomMinimumVersion)_$($osName)_amd64.zip"
+    $outputBinary = Join-Path -Path $tmpDirectory -ChildPath "terraform_$($TerraformMinimumVersion)_$($osName)_amd64.zip"
     $outputShaSums = Join-Path -Path $tmpDirectory -ChildPath "terraform_SHA265SUMS"
     $outputShaSumsSig = Join-Path -Path $tmpDirectory -ChildPath "terraform_SHA265SUMS.sig"
 
@@ -320,7 +288,7 @@ function ValidateTerraformMinimumVersion {
     $versionStr = &"$TerraformPath" --% -version
     if ($LastExitCode -gt 0) { throw "Cannot validate terraform version." }
 
-    [Regex]$regex = "v(?<versionNumber>\d+.\d+.\d+)"
+    [Regex]$regex = "v(?<versionNumber>\d+\.\d+\.\d+)"
     $regexMatch = $regex.Match($versionStr)
     if ($regexMatch.Success) {
         $versionInfo = [Version]$($regexMatch.Groups["versionNumber"].Value)
@@ -329,8 +297,8 @@ function ValidateTerraformMinimumVersion {
         throw "Cannot get version number from terraform."
     }
 
-    if (!$($versionInfo -ge $TerrafomMinimumVersion)) {
-        throw "Require at least terraform v$TerrafomMinimumVersion but found terraform v$versionInfo."
+    if (!$($versionInfo -ge $TerraformMinimumVersion)) {
+        throw "Require at least terraform v$TerraformMinimumVersion but found terraform v$versionInfo."
     }
 }
 
@@ -384,7 +352,7 @@ function CreateOrUpdateTerraformBackend {
     $StorageAccountNamePrefix = $Prefix.Replace("_", "").Replace("-", "").SubString(0, [System.Math]::Min(10, $Prefix.Replace("_", "").Replace("-", "").Length))
     $global:TfStateStorageAccountName = "tf$($StorageAccountNamePrefix)$($EnvironmentName)$($tf_hash_suffix)"
 
-    az storage account create --name $global:TfStateStorageAccountName --resource-group $UtilResourceGroupName --location $Location --sku "Standard_LRS" --kind "BlobStorage" --access-tier "Hot" --encryption-service "blob" --encryption-service "file" --https-only "true" --default-action "Allow" --bypass "None" --output none --tags "environment=$EnvironmentName" "purpose=TerraformStateStorage" "prefix=$Prefix"
+    az storage account create --name $global:TfStateStorageAccountName --resource-group $UtilResourceGroupName --location $Location --sku "Standard_LRS" --kind "StorageV2" --access-tier "Hot" --encryption-service "blob" --encryption-service "file" --https-only "true" --default-action "Allow" --bypass "None" --output none --tags "environment=$EnvironmentName" "purpose=TerraformStateStorage" "prefix=$Prefix"
     if ($LastExitCode -gt 0) { throw "az CLI error." }
 
     if ($SkipFirewallUpdate) {
@@ -522,9 +490,9 @@ function TerraformPlan {
         Set-Location -Path $Path
 
         if ($VarFile) {
-            &"$TerraformPath" plan $TerraformNoColor -input=false -var-file="$VarFile" -out="`"$TerraformPlanPath`""
+            &"$TerraformPath" plan @TerraformNoColor -input=false -var-file="$VarFile" -out="`"$TerraformPlanPath`""
         } else {
-            &"$TerraformPath" plan $TerraformNoColor -input=false -out="`"$TerraformPlanPath`""
+            &"$TerraformPath" plan @TerraformNoColor -input=false -out="`"$TerraformPlanPath`""
         }
         if ($LastExitCode -gt 0) { throw "terraform error." }
     }
@@ -555,7 +523,7 @@ function TerraformApply {
             }
         }
 
-        &"$TerraformPath" apply $TerraformNoColor -input=false "`"$TerraformPlanPath`""
+        &"$TerraformPath" apply @TerraformNoColor -input=false "`"$TerraformPlanPath`""
         if ($LastExitCode -gt 0) { throw "terraform error." }
     }
     finally {
@@ -586,9 +554,9 @@ function TerraformDestroy {
         }
 
         if ($VarFile) {
-            &"$TerraformPath" destroy $TerraformNoColor -auto-approve -input=false -var-file="$VarFile"
+            &"$TerraformPath" destroy @TerraformNoColor -auto-approve -input=false -var-file="$VarFile"
         } else {
-            &"$TerraformPath" destroy $TerraformNoColor -auto-approve -input=false
+            &"$TerraformPath" destroy @TerraformNoColor -auto-approve -input=false
         }
         if ($LastExitCode -gt 0) { throw "terraform error." }
     }
@@ -610,7 +578,7 @@ function TerraformOutput {
     try {
         Set-Location -Path $Path
 
-        $terrafomOutput = &"$TerraformPath" output $TerraformNoColor -json
+        $terrafomOutput = &"$TerraformPath" output @TerraformNoColor -json
         if ($LastExitCode -gt 0) { throw "terraform error." }
 
         Set-Content -Path $TerraformOutputPath  -Value $terrafomOutput
@@ -648,20 +616,31 @@ function InitTerraformWithRemoteBackend {
 
     Write-Verbose "[Terraform] Init: $Path"
 
-    $accountKeyResponse = az storage account keys list --account-name $global:TfStateStorageAccountName | ConvertFrom-Json
-    $key = $accountKeyResponse[0].value
+    # 1. 显式指定资源组，确保精准查询
+    $accountKeyResponse = az storage account keys list --resource-group $UtilResourceGroupName --account-name $global:TfStateStorageAccountName | ConvertFrom-Json
+    if ($LastExitCode -gt 0) { 
+        throw "az CLI error: Failed to retrieve storage account keys for $($global:TfStateStorageAccountName)." 
+    }
+
+    # 2. 校验获取到的 Key 是否为空
+    if (-not $accountKeyResponse -or -not $accountKeyResponse[0].value) {
+        throw "Storage account key is null or empty. Cannot initialize backend."
+    }
+
+    # 3. 清洗 Key
+    $key = -join ($accountKeyResponse[0].value -split '\s')
 
     Push-Location
     try {
         Set-Location -Path $Path
-        &"$TerraformPath" init $TerraformNoColor -backend-config "resource_group_name=$UtilResourceGroupName" -backend-config "storage_account_name=$($global:TfStateStorageAccountName)" -backend-config "container_name=$($global:TfStateContainerName)" -backend-config "access_key=`"$key`""
+        # 4. 规范传参
+        &"$TerraformPath" init @TerraformNoColor -backend-config "resource_group_name=$UtilResourceGroupName" -backend-config "storage_account_name=$($global:TfStateStorageAccountName)" -backend-config "container_name=$($global:TfStateContainerName)" -backend-config "access_key=$key"
         if ($LastExitCode -gt 0) { throw "terraform error." }
     }
     finally {
         Pop-Location
     }
 }
-
 function InitTerraformWithLocalBackend {
     param (
         [Parameter(Mandatory = $true)]
@@ -672,7 +651,7 @@ function InitTerraformWithLocalBackend {
     Push-Location
     try {
         Set-Location -Path $Path
-        $ignoreOutput = &"$TerraformPath" init -backend=false $TerraformNoColor
+        $ignoreOutput = &"$TerraformPath" init -backend=false @TerraformNoColor
         if ($LastExitCode -gt 0) { 
             Write-Error $ignoreOutput
             throw "terraform error."
@@ -850,4 +829,3 @@ if ($Init -or $Destroy -or $Plan -or $Apply -or $Output) {
 } else {
     Write-Warning "Nothing modified or initialized. Please specify, -Init, -Destroy, -Plan or -Apply"
 }
-

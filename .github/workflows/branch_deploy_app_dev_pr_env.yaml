@@ -25,9 +25,10 @@ jobs:
 
       - name: Extract Deployment Details and Report Deployment in Progress
         id: deployment_data
-        uses: actions/github-script@v3
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          retries: 3
           script: |
             const scriptPath = require('path').resolve('./.github/workflows/scripts/unpack_deployment_payload.js')
               , deploymentPayload = require(scriptPath);
@@ -38,6 +39,10 @@ jobs:
     name: Mirror Containers to ACR in DEV
     runs-on: ubuntu-latest
 
+    permissions:
+          contents: read
+          packages: write
+          
     if: |
       startsWith(github.event.deployment.environment, 'dev')
 
@@ -52,9 +57,10 @@ jobs:
       - name: Sign in to GitHub Container Registry
         uses: docker/login-action@v1
         with:
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.CR_PAT }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
           registry: ghcr.io
+
       - name: Fetch Container Images from GHCR and Tag for ACR
         run: |
           docker pull $GHCR_APP_IMAGE
@@ -113,7 +119,7 @@ jobs:
           DeploymentURL="http://${IngressFQDN}/"
           echo "::set-output name=DeploymentURL::${DeploymentURL}"
       - name: Report Success
-        uses: actions/github-script@v3
+        uses: actions/github-script@v9
         env:
           environment_url: ${{ steps.get_deployment_url.outputs.DeploymentURL }}
         with:

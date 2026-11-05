@@ -2,7 +2,7 @@
 resource "azurerm_resource_group" "aksrg" {
   name     = "${local.prefix_snake}_rg"
   location = var.location
-    
+
   tags = {
     environment = var.environment_name
   }
@@ -22,50 +22,70 @@ resource "azurerm_virtual_network" "kubevnet" {
 
 # https://www.terraform.io/docs/providers/azurerm/d/subnet.html
 resource "azurerm_subnet" "gwnet" {
-  name                      = "gw-1-snet"
-  resource_group_name       = azurerm_resource_group.aksrg.name
+  name                = "gw-1-snet"
+  resource_group_name = azurerm_resource_group.aksrg.name
   #network_security_group_id = "${azurerm_network_security_group.aksnsg.id}"
-  address_prefixes            = ["10.0.1.0/24"]
-  virtual_network_name      = azurerm_virtual_network.kubevnet.name
+  address_prefixes     = ["10.0.1.0/24"]
+  virtual_network_name = azurerm_virtual_network.kubevnet.name
 }
 resource "azurerm_subnet" "acinet" {
-  name                      = "aci-2-snet"
-  resource_group_name       = azurerm_resource_group.aksrg.name
+  name                = "aci-2-snet"
+  resource_group_name = azurerm_resource_group.aksrg.name
   #network_security_group_id = "${azurerm_network_security_group.aksnsg.id}"
-  address_prefixes            = ["10.0.2.0/24"]
-  virtual_network_name      = azurerm_virtual_network.kubevnet.name
+  address_prefixes     = ["10.0.2.0/24"]
+  virtual_network_name = azurerm_virtual_network.kubevnet.name
 }
 resource "azurerm_subnet" "ingnet" {
-  name                      = "ing-4-snet"
-  resource_group_name       = azurerm_resource_group.aksrg.name
+  name                = "ing-4-snet"
+  resource_group_name = azurerm_resource_group.aksrg.name
   #network_security_group_id = "${azurerm_network_security_group.aksnsg.id}"
-  address_prefixes            = ["10.0.4.0/24"]
-  virtual_network_name      = azurerm_virtual_network.kubevnet.name
+  address_prefixes     = ["10.0.4.0/24"]
+  virtual_network_name = azurerm_virtual_network.kubevnet.name
 }
 resource "azurerm_subnet" "aksnet" {
-  name                      = "aks-5-snet"
-  resource_group_name       = azurerm_resource_group.aksrg.name
+  name                = "aks-5-snet"
+  resource_group_name = azurerm_resource_group.aksrg.name
   #network_security_group_id = "${azurerm_network_security_group.aksnsg.id}"
-  address_prefixes            = ["10.0.5.0/24"]
-  virtual_network_name      = azurerm_virtual_network.kubevnet.name
+  address_prefixes     = ["10.0.5.0/24"]
+  virtual_network_name = azurerm_virtual_network.kubevnet.name
 
-  service_endpoints         = ["Microsoft.AzureCosmosDB", "Microsoft.ContainerRegistry", "Microsoft.EventHub", "Microsoft.KeyVault", "Microsoft.ServiceBus", "Microsoft.Sql", "Microsoft.Storage"]
+  service_endpoint {
+    service = "Microsoft.AzureCosmosDB"
+  }
+  service_endpoint {
+    service = "Microsoft.ContainerRegistry"
+  }
+  service_endpoint {
+    service = "Microsoft.EventHub"
+  }
+  service_endpoint {
+    service = "Microsoft.KeyVault"
+  }
+  service_endpoint {
+    service = "Microsoft.ServiceBus"
+  }
+  service_endpoint {
+    service = "Microsoft.Sql"
+  }
+  service_endpoint {
+    service = "Microsoft.Storage"
+  }
 }
 
 resource "azurerm_subnet" "basnet" {
-  name                      = "bas-7-snet"
-  resource_group_name       = azurerm_resource_group.aksrg.name
+  name                = "bas-7-snet"
+  resource_group_name = azurerm_resource_group.aksrg.name
   #network_security_group_id = "${azurerm_network_security_group.aksnsg.id}"
-  address_prefixes            = ["10.0.7.0/24"]
-  virtual_network_name      = azurerm_virtual_network.kubevnet.name
+  address_prefixes     = ["10.0.7.0/24"]
+  virtual_network_name = azurerm_virtual_network.kubevnet.name
 }
 
 resource "azurerm_public_ip" "bastion_ip" {
-  name                         = "bastion-pip"
-  location                     = azurerm_kubernetes_cluster.akstf.location
-  resource_group_name          = azurerm_kubernetes_cluster.akstf.node_resource_group
-  allocation_method            = "Static"
-  domain_name_label            = "${local.prefix_kebab}-vnet-ip"
+  name                = "bastion-pip"
+  location            = azurerm_kubernetes_cluster.akstf.location
+  resource_group_name = azurerm_kubernetes_cluster.akstf.node_resource_group
+  allocation_method   = "Static"
+  domain_name_label   = "${local.prefix_kebab}-vnet-ip"
 
   depends_on = [azurerm_kubernetes_cluster.akstf]
 }

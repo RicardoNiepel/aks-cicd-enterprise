@@ -27,7 +27,7 @@ jobs:
           application_private_key: ${{ secrets.REPO_AUTOMATION_APPLICATION_KEY }}
           
       - name: Mark environments as inactive in GitHub
-        uses: actions/github-script@v3
+        uses: actions/github-script@v9
         with:
           github-token: ${{ steps.temp_token.outputs.token }}
           script: |

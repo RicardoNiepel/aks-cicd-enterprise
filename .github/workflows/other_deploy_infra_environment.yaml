@@ -18,7 +18,7 @@ on:
       location:
         description: 'The deployment location used for all Azure artefacts.'
         required: true
-        default: 'northeurope'
+        default: 'centralus'
 
 defaults:
   run:
@@ -40,7 +40,7 @@ jobs:
         with:
           creds: ${{ secrets[github.event.inputs.azureSecretName] }}
       - name: Run Terraform Apply
-        run: ./tf.ps1 -Verbose -Force -Prefix ${{ github.event.inputs.prefix }} -Location ${{ github.event.inputs.location }} -EnvironmentName ${{ github.event.inputs.environmentName }} -TargetPath . -Apply -Download
+        run: ./tf.ps1 -Verbose -Force -Prefix ${{ github.event.inputs.prefix }} -Location ${{ github.event.inputs.location }} -EnvironmentName ${{ github.event.inputs.environmentName }} -TargetPath . -Apply -DownloadTerraform
         shell: pwsh
         env:
           AZURE_CREDENTIALS: ${{ secrets[github.event.inputs.azureSecretName] }}

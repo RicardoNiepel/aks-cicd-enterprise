@@ -23,7 +23,7 @@ jobs:
 
       - name: Acknowledge Request Label from Pull Request
         id: acknowledge_label
-        uses: actions/github-script@v3
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -42,7 +42,7 @@ jobs:
           application_private_key: ${{ secrets.REPO_AUTOMATION_APPLICATION_KEY }}
 
       - name: Create Deployment
-        uses: actions/github-script@v3
+        uses: actions/github-script@v9
         env:
           container_registry: ghcr.io
 
@@ -68,12 +68,12 @@ jobs:
 
       - name: Report Failure
         if: failure()
-        uses: actions/github-script@v3
+        uses: actions/github-script@v9
         with:
           script: |
             const commentBody = `Failure in _${context.payload.label.name.toLowerCase()}_, for more details see https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
 
-            await github.issues.createComment({
+            await github.rest.issues.createComment({
               ...context.repo,
               issue_number: context.payload.number,
               body: commentBody,

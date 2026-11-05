@@ -10,27 +10,29 @@ variable "location" {
 
 variable "aks_kubernetes_version_prefix" {
   type        = string
-  default     = "1.18"
-  description = "The Kubernetes Version prefix (MAJOR.MINOR) to be used by the AKS cluster. The BUGFIX version is determined automatically (latest)."
+  default     = null
+  description = "Optional Kubernetes version (MAJOR.MINOR); unset lets AKS select its recommended version when creating a cluster."
 }
 
 variable "environment_name" {
+  type = string
   # default = "NAME"
   description = "default tag applied to all resources"
 }
 
 variable "vm_size" {
-  default = "Standard_DS2_v2"
+  type    = string
+  default = "Standard_B2s_v2"
 }
 
 variable "tls_cert_base64" {
-  type = string
-  default = ""
+  type        = string
+  default     = ""
   description = "Default certificate for ingress controller."
 }
 
 variable "tls_key_base64" {
-  type = string
-  default = ""
+  type        = string
+  default     = ""
   description = "Default certificate for ingress controller."
 }

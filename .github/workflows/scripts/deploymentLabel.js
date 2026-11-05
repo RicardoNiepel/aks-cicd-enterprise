@@ -32,7 +32,7 @@ module.exports = class DeploymentLabel {
       });
 
       // Remove the label
-      await github.issues.removeLabel({
+      await github.rest.issues.removeLabel({
         ...context.repo,
         issue_number: context.issue.number,
         name: context.payload.label.name
@@ -48,7 +48,7 @@ module.exports = class DeploymentLabel {
       , self = this;
       ;
 
-    return github.repos.getCombinedStatusForRef({
+    return github.rest.repos.getCombinedStatusForRef({
       ...context.repo,
       ref: context.payload.pull_request.head.sha
     }).then(status => {
@@ -70,7 +70,7 @@ module.exports = class DeploymentLabel {
   async postNoContainerStatus() {
     const context = this.context;
 
-    await this.github.issues.createComment({
+    await this.github.rest.issues.createComment({
       ...context.repo,
       issue_number: context.issue.number,
       body: `⚠️ Failed to trigger deployment request as missing container status check(s) on commit`,
@@ -80,7 +80,7 @@ module.exports = class DeploymentLabel {
   async postTooManyContainerStatus(containers) {
     const context = this.context;
 
-    await this.github.issues.createComment({
+    await this.github.rest.issues.createComment({
       ...context.repo,
       issue_number: context.issue.number,
       body: `⚠️ Failed to trigger deployment request found too many containers on the commit:\n\n${JSON.stringify(containers)}`,
@@ -128,7 +128,7 @@ Starting Deployment to __${environmentRegexResult[1]}__ environment:
 |-|-|-|
 ${containerTableEntries.join('\n')}
 `
-    await github.issues.createComment({
+    await github.rest.issues.createComment({
       ...context.repo,
       issue_number: context.issue.number,
       body: commentBody,
