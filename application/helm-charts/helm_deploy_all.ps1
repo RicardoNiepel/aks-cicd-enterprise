@@ -37,5 +37,13 @@ Write-Host "Namespace:        $Namespace"
 Write-Host "Image:            $Image"
 Write-Host "Tag:              $Tag"
 
-&helm upgrade bookstore-advanced ./bookstore-advanced --install --namespace $Namespace --set "`"image.repository=$($Image)`"" --set "`"image.tag=$($Tag)`"" --set "`"ingress.path=$($IngressPath)`"" --create-namespace
+$HelmCommand = "helm upgrade bookstore-advanced ./bookstore-advanced --install --namespace $Namespace --set image.repository=$Image --set image.tag=$Tag --set ingress.path=$IngressPath --create-namespace"
+
+# Print out the command to be executed
+Write-Host "Executing Helm Command:" -ForegroundColor Cyan
+Write-Host $HelmCommand -ForegroundColor Yellow
+
+# Then execute the command
+& helm upgrade bookstore-advanced ./bookstore-advanced --install --namespace $Namespace --set "image.repository=$Image" --set "image.tag=$Tag" --set "ingress.path=$IngressPath" --create-namespace
+
 if ($LastExitCode -gt 0) { throw "helm deploy error" }
